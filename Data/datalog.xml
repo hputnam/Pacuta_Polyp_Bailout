@@ -1,0 +1,561 @@
+<?xml version="1.0"?>
+<datalog software="5.12_2B25" hardware="1.0">
+<hostname>PolypBailout</hostname>
+<serial>AC5:29428</serial>
+<timezone>-7.00</timezone>
+<record>
+<date>07/02/2025 09:23:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:24:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:25:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:26:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:27:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:28:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:29:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:30:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:31:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.3</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:32:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:33:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:34:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:35:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:36:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:37:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:38:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:39:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:40:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:41:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:42:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:43:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:44:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:45:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:46:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:47:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:48:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:49:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:50:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:51:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:52:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:53:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:54:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:55:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:56:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:57:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:58:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 09:59:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:00:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:01:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:02:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:03:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:04:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:05:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:06:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:07:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:08:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:09:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:10:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:11:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:12:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:13:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:14:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:15:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:16:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:17:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:18:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:19:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:20:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:21:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:22:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:23:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:24:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:25:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:26:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:27:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:28:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:29:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:30:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:31:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:32:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:33:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:34:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:35:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:36:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:37:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:38:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:39:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:40:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:41:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:42:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:43:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:44:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:45:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.4</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:46:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:47:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:48:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:49:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:50:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:51:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:52:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:53:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:54:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:55:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:56:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:57:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:58:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 10:59:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:00:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:01:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:02:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:03:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:04:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:05:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.6</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:06:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:07:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:08:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:09:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:10:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:11:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:12:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+<record>
+<date>07/02/2025 11:13:00</date>
+<probe>
+<name>Tmpx29</name> <type>Temp</type><value>25.5</value></probe>
+</record>
+</datalog>
