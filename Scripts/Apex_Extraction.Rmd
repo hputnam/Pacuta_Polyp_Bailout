@@ -17,31 +17,28 @@ library("tidyverse")
 
 Read in xml info
 ```{r}
-#apex.xmlfile <- xmlParse("http://192.168.41.22/cgi-bin/datalog.xml?sdate=241201&days=20") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
-#Apex.Data.apex <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250704&days=10") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+Apex.Data.apex <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 
-#Tank7 = probe.value.21
-#Tank9 = probe.value.22
-#Tank10 = probe.value.24
+#Tmp_1 = probe.value
+#Cond_1 = probe.value.1
+#pH_1 = probe.value.5
 
-#Apex.Data.apex <- Apex.Data.apex %>%
-#  select(c(date, probe.value.21, probe.value.22, probe.value.24))
+Apex.Data.apex <- Apex.Data.apex %>%
+  select(c(date, probe.value, probe.value.1, probe.value.5))
 
-#colnames(Apex.Data.apex) <- c("date", "Tank7", "Tank9", "Tank10")
+colnames(Apex.Data.apex) <- c("date", "Tmp_1", "Cond_1", "pH_1")
 
 #Check Current system time zone and time
-#current_tz <- Sys.timezone() 
-#print(current_tz)
-
-#current_time <- Sys.time()
-#print(current_time)
+current_tz <- Sys.timezone() 
+print(current_tz)
 
 # Set to correct timezone, time and correct date
 #Sys.setenv(TZ = "UTC03:00") 
 # correct_date <- Sys.Date()
 # print(correct_date)
-# 
-# date <- Sys.Date() #set todays date
+ 
+date <- Sys.Date() #set todays date
 # time <- Sys.time()
 # time <- gsub(":" ,"_",time)
 # time <- gsub(" " ,"_",time)
@@ -49,26 +46,8 @@ Read in xml info
 # today <- gsub('-', '', today) 
 # today <- as.numeric(today)
 # 
-# write.csv(Apex.Data.apex, paste0("data/",date,"_","Apex.Data.apex.csv")) #write file to save data
+write.csv(Apex.Data.apex, paste0("Data/",date,"_","Apex.Data.csv")) #write file to save data
 
-DBP_Moorea_Sq.xmlfile <- xmlParse("http://192.168.41.14/cgi-bin/datalog.xml?sdate=250101&days=18") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
-Apex.Data.DBP_Moorea_Sq <- ldply(xmlToList(DBP_Moorea_Sq.xmlfile), data.frame) #convert xml to dataframe
-
-#Tank3 = probe.value.25
-#Tank4 = probe.value.6
-#Tank5 = probe.value.4
-
-Apex.Data.DBP_Moorea_Sq <- Apex.Data.DBP_Moorea_Sq %>%
-  select(c(date, probe.value.25, probe.value.6, probe.value.4))
-
-colnames(Apex.Data.DBP_Moorea_Sq) <- c("date", "Tank3", "Tank4", "Tank5")
-write.csv(Apex.Data.DBP_Moorea_Sq, paste0("data/",date,"_","Apex.Data.DBP_Moorea_Sq.csv")) #write file to save data
-
-Apex.Data <- left_join(Apex.Data.DBP_Moorea_Sq, Apex.Data.apex, by="date")
-
-Apex.Data <- na.omit(Apex.Data)
-
-write.csv(Apex.Data, paste0("data/",date,"_","apex_data.csv")) #write file to save data
 ```
 
 Plot Apex temperature data
@@ -96,7 +75,7 @@ apex.data <- ggplot(Apex.Data_long, aes(x = date, y = Temperature, color = Tank)
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 apex.data 
 
-ggsave("output/apex_temperatures.pdf", plot=apex.data, height=6, width=8)
+ggsave("Output/apex_temperatures.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
