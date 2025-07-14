@@ -1,0 +1,118 @@
+---
+title: "Apex_Data_Extraction"
+author: "HM Putnam"
+date: "2024-12-09"
+output: html_document
+---
+
+Load Libraries
+```{r}
+library("XML")
+library("plyr")
+library("lubridate")
+library("dplyr")
+library("tidyverse")
+```
+
+
+Read in xml info
+```{r}
+#apex.xmlfile <- xmlParse("http://192.168.41.22/cgi-bin/datalog.xml?sdate=241201&days=20") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+#Apex.Data.apex <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
+
+#Tank7 = probe.value.21
+#Tank9 = probe.value.22
+#Tank10 = probe.value.24
+
+#Apex.Data.apex <- Apex.Data.apex %>%
+#  select(c(date, probe.value.21, probe.value.22, probe.value.24))
+
+#colnames(Apex.Data.apex) <- c("date", "Tank7", "Tank9", "Tank10")
+
+#Check Current system time zone and time
+#current_tz <- Sys.timezone() 
+#print(current_tz)
+
+#current_time <- Sys.time()
+#print(current_time)
+
+# Set to correct timezone, time and correct date
+#Sys.setenv(TZ = "UTC03:00") 
+# correct_date <- Sys.Date()
+# print(correct_date)
+# 
+# date <- Sys.Date() #set todays date
+# time <- Sys.time()
+# time <- gsub(":" ,"_",time)
+# time <- gsub(" " ,"_",time)
+# today <- sub('..', '', date)
+# today <- gsub('-', '', today) 
+# today <- as.numeric(today)
+# 
+# write.csv(Apex.Data.apex, paste0("data/",date,"_","Apex.Data.apex.csv")) #write file to save data
+
+DBP_Moorea_Sq.xmlfile <- xmlParse("http://192.168.41.14/cgi-bin/datalog.xml?sdate=250101&days=18") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+Apex.Data.DBP_Moorea_Sq <- ldply(xmlToList(DBP_Moorea_Sq.xmlfile), data.frame) #convert xml to dataframe
+
+#Tank3 = probe.value.25
+#Tank4 = probe.value.6
+#Tank5 = probe.value.4
+
+Apex.Data.DBP_Moorea_Sq <- Apex.Data.DBP_Moorea_Sq %>%
+  select(c(date, probe.value.25, probe.value.6, probe.value.4))
+
+colnames(Apex.Data.DBP_Moorea_Sq) <- c("date", "Tank3", "Tank4", "Tank5")
+write.csv(Apex.Data.DBP_Moorea_Sq, paste0("data/",date,"_","Apex.Data.DBP_Moorea_Sq.csv")) #write file to save data
+
+Apex.Data <- left_join(Apex.Data.DBP_Moorea_Sq, Apex.Data.apex, by="date")
+
+Apex.Data <- na.omit(Apex.Data)
+
+write.csv(Apex.Data, paste0("data/",date,"_","apex_data.csv")) #write file to save data
+```
+
+Plot Apex temperature data
+```{r}
+
+str(Apex.Data)
+
+Apex.Data <- Apex.Data %>%
+  mutate(date = mdy_hms(date)) %>%  # Convert the date to a POSIXct datetime
+  mutate(across(starts_with("Tank"), ~ as.numeric(.)))  # Convert temperature columns to numeric
+
+Apex.Data_long <- Apex.Data %>%
+  pivot_longer(cols = starts_with("Tank"),
+               names_to = "Tank",
+               values_to = "Temperature")
+
+Apex.Data_long <- na.omit(Apex.Data_long)
+
+apex.data <- ggplot(Apex.Data_long, aes(x = date, y = Temperature, color = Tank)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Temperature (°C)",
+       color = "Tank") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+apex.data 
+
+ggsave("output/apex_temperatures.pdf", plot=apex.data, height=6, width=8)
+
+```
+
+
+```{r}
+# Ensure that 'date' is in the correct time zone (America/New_York)
+Apex.Data_long.TZ <- Apex.Data_long %>%
+  mutate(date = with_tz(date, tzone = "HST"))
+
+# Now filter the data after 2024-12-01 00:00:00
+apex.data.tz <- Apex.Data_long %>%
+  filter(date >= ymd_hms("2024-12-19 00:00:00")) %>%
+  ggplot(aes(x = date, y = Temperature, color = Tank)) +
+  geom_point() +
+  labs(x = "Time", y = "Temperature (°C)", color = "Tank") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+apex.data.tz 
+```

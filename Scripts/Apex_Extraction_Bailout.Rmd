@@ -1,0 +1,86 @@
+---
+title: "Apex_Data_Extraction"
+author: "HM Putnam"
+date: "2024-12-09"
+output: html_document
+---
+
+Load Libraries
+```{r}
+#library("XML")
+library("plyr")
+library("lubridate")
+library("dplyr")
+library("tidyverse")
+```
+
+
+Read in data
+```{r}
+
+
+Tanks.3.4.5.A <- read.csv("data/2024-12-19_Apex.Data.DBP_Moorea_Sq.csv", header=TRUE) %>%
+filter(date < "12/19/2024 00:00:00") %>%
+  select("date", "Tank3", "Tank4", "Tank5") %>%
+  mutate(date = mdy_hms(date))  # Convert the date to a POSIXct datetime
+
+#need to change date format... it reads in with h and min (e.g.	12/19/24 0:00)  and the other files  have seconds (e.g. 12/19/24 00:00:00)
+Tanks.3.4.5.B <- read.csv("data/20241231_Apex.Data.DBP_Moorea_Sq.csv", header=TRUE) %>%
+  na.omit(Tanks.3.4.5.B) %>%
+  select("date", "Tank3", "Tank4", "Tank5") %>%
+  mutate(date = mdy_hm(date),    # Convert the date to POSIXct
+         date = date + seconds(60))  # Add 60 seconds to the date
+str(Tanks.3.4.5.B)
+
+Tanks.3.4.5.C <- read.csv("data/20250118_Apex.Data.DBP_Moorea_Sq.csv", header=TRUE) %>%
+  na.omit(Tanks.3.4.5.C) %>%
+  select("date", "Tank3", "Tank4", "Tank5") %>%
+  mutate(date = mdy_hms(date))  # Convert the date to a POSIXct datetime
+str(Tanks.3.4.5.C)
+
+Tanks.3.4.5 <- rbind(Tanks.3.4.5.A, Tanks.3.4.5.B, Tanks.3.4.5.C) 
+str(Tanks.3.4.5) 
+
+Tanks.7.9.10 <- read.csv("data/2024-12-19_Apex.Data.apex.csv", header=TRUE) %>%
+  na.omit(Tanks.7.9.10) %>%
+  select("date", "Tank7", "Tank9", "Tank10")%>%
+  mutate(date = mdy_hms(date))  # Convert the date to a POSIXct datetime
+str(Tanks.7.9.10) 
+
+Apex.Data <- left_join(Tanks.3.4.5, Tanks.7.9.10, by="date")
+#Apex.Data <- Tanks.3.4.5
+#Apex.Data <- Tanks.7.9.10
+
+```
+
+Plot Apex temperature data
+```{r}
+
+str(Apex.Data)
+
+Apex.Data <- Apex.Data %>%
+  #mutate(date = mdy_hms(date)) %>%  # Convert the date to a POSIXct datetime
+  mutate(across(starts_with("Tank"), ~ as.numeric(.)))  # Convert temperature columns to numeric
+
+Apex.Data_long <- Apex.Data %>%
+  pivot_longer(cols = starts_with("Tank"),
+               names_to = "Tank",
+               values_to = "Temperature")
+
+#Apex.Data_long <- na.omit(Apex.Data_long)
+
+apex.data <- ggplot(Apex.Data_long, aes(x = date, y = Temperature, color = Tank)) +
+  geom_point() +
+  labs(x = "Time",
+       y = "Temperature (°C)",
+       color = "Tank") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+apex.data 
+
+ggsave("output/apex_temperatures.pdf", plot=apex.data, height=6, width=12)
+
+```
+
+
+

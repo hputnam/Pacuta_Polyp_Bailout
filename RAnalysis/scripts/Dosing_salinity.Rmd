@@ -1,0 +1,54 @@
+---
+title: "Salinity Bailout"
+author: "HM Putnam"
+date: "2025-05-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Parameters
+S0 <- 35        # Initial salinity
+S_target <- 56  # Target salinity
+S_added <- 70   # Added water salinity
+V <- 23         # Tank volume
+dose_volume <- 1  # Constant dose volume (mL)
+duration_hours <- 24
+
+# Solve for number of doses (n)
+r <- 1 - dose_volume / V
+n <- log((S_target - S_added) / (S0 - S_added)) / log(r)
+n <- ceiling(n)  # Round up to nearest whole dose
+
+# Calculate dose interval
+interval_minutes <- (duration_hours * 60) / n
+cat("⏱️ Dose 1 mL every", round(interval_minutes, 2), "minutes to reach 56 ppt in 24 hours.\n")
+cat("🔁 Total doses:", n, "\n")
+
+# Simulate salinity change
+salinity <- numeric(n + 1)
+salinity[1] <- S0
+time_hours <- seq(0, duration_hours, length.out = n + 1)
+
+for (i in 1:n) {
+  salinity[i + 1] <- ((V - dose_volume) * salinity[i] + dose_volume * S_added) / V
+}
+
+# Plot
+library(ggplot2)
+df <- data.frame(Time = time_hours, Salinity = salinity)
+
+ggplot(df, aes(x = Time, y = Salinity)) +
+  geom_line(color = "blue", size = 1) +
+  geom_hline(yintercept = S_target, linetype = "dashed", color = "red") +
+  labs(
+    title = "Salinity Rise with 1 mL Doses of 70 ppt Water",
+    subtitle = paste("Dose every", round(interval_minutes, 2), "minutes to reach exactly 56 ppt in 24 hours"),
+    x = "Time (hours)",
+    y = "Salinity (ppt)"
+  ) +
+  theme_minimal()
+```
