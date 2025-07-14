@@ -12,22 +12,32 @@ library("plyr")
 library("lubridate")
 library("dplyr")
 library("tidyverse")
+library(ggpmisc)
 ```
 
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250704&days=10") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
-Apex.Data.apex <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250711&days=4") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
+```
 
+# clean,  arrange, and save data
+```{r}
+#List of probe names from the Apex and the columns they are located in from the xml file
 #Tmp_1 = probe.value
 #Cond_1 = probe.value.1
 #pH_1 = probe.value.5
+#Tmp_2 = probe.value.2
+#Cond_2 = probe.value.3
+#pH_2 = probe.value.7
 
-Apex.Data.apex <- Apex.Data.apex %>%
-  select(c(date, probe.value, probe.value.1, probe.value.5))
+#select columns of interest by name from df
+Apex.Data.apex <- Apex.Data %>%
+  select(c(date, probe.value, probe.value.1, probe.value.2, probe.value.3))
 
-colnames(Apex.Data.apex) <- c("date", "Tmp_1", "Cond_1", "pH_1")
+#rename columns
+colnames(Apex.Data.apex) <- c("date", "P_Tmp_1", "P_Cond_1", "P_Tmp_2", "P_Cond_2")
 
 #Check Current system time zone and time
 current_tz <- Sys.timezone() 
@@ -46,6 +56,9 @@ date <- Sys.Date() #set todays date
 # today <- gsub('-', '', today) 
 # today <- as.numeric(today)
 # 
+
+Apex.Data.apex <- na.omit(Apex.Data.apex)
+
 write.csv(Apex.Data.apex, paste0("Data/",date,"_","Apex.Data.csv")) #write file to save data
 
 ```
@@ -53,45 +66,114 @@ write.csv(Apex.Data.apex, paste0("Data/",date,"_","Apex.Data.csv")) #write file 
 Plot Apex temperature data
 ```{r}
 
-str(Apex.Data)
+#view dataframe attribues
+str(Apex.Data.apex)
 
-Apex.Data <- Apex.Data %>%
+#convert date time to POSIXct datetime and probe data to numeric
+Apex.Data.apex <- Apex.Data.apex %>%
   mutate(date = mdy_hms(date)) %>%  # Convert the date to a POSIXct datetime
-  mutate(across(starts_with("Tank"), ~ as.numeric(.)))  # Convert temperature columns to numeric
+  mutate(across(starts_with("P_"), ~ as.numeric(.)))  # Convert temperature columns to numeric
 
-Apex.Data_long <- Apex.Data %>%
-  pivot_longer(cols = starts_with("Tank"),
-               names_to = "Tank",
-               values_to = "Temperature")
+#view dataframe attribues
+str(Apex.Data.apex)
 
-Apex.Data_long <- na.omit(Apex.Data_long)
+#take the probe data columns and rearrange them into long format, with a column named probe and the numeric data in a column named value
+Apex.Data_long <- Apex.Data.apex %>%
+  pivot_longer(cols = starts_with("P_"),
+               names_to = "probe",
+               values_to = "value")
 
-apex.data <- ggplot(Apex.Data_long, aes(x = date, y = Temperature, color = Tank)) +
+Apex.Data_long$Type <-Apex.Data_long$probe
+Apex.Data_long$Type <- gsub("P_" ,"", Apex.Data_long$Type)
+Apex.Data_long$Type <- gsub("_1" ,"", Apex.Data_long$Type)
+Apex.Data_long$Type <- gsub("_2" ,"", Apex.Data_long$Type)
+
+
+str(Apex.Data_long)
+unique(Apex.Data_long$probe)
+unique(Apex.Data_long$Type)
+
+#plot data 
+apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color=probe), group = Type) +
   geom_point() +
   labs(x = "Time",
-       y = "Temperature (°C)",
-       color = "Tank") +
+       y = "Value",
+       color = "Type") +
+  facet_wrap("Type", scales = "free",)+
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 apex.data 
 
-ggsave("Output/apex_temperatures.pdf", plot=apex.data, height=6, width=8)
+ggsave("Outputs/apex_temperatures.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
-
+# Probe cross calibration
 ```{r}
-# Ensure that 'date' is in the correct time zone (America/New_York)
-Apex.Data_long.TZ <- Apex.Data_long %>%
-  mutate(date = with_tz(date, tzone = "HST"))
 
-# Now filter the data after 2024-12-01 00:00:00
-apex.data.tz <- Apex.Data_long %>%
-  filter(date >= ymd_hms("2024-12-19 00:00:00")) %>%
-  ggplot(aes(x = date, y = Temperature, color = Tank)) +
-  geom_point() +
-  labs(x = "Time", y = "Temperature (°C)", color = "Tank") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-apex.data.tz 
+str(Apex.Data.apex)
+
+Apex.Data.apex$P_Cond_1 <- as.numeric(Apex.Data.apex$P_Cond_1)
+Apex.Data.apex$P_Cond_2 <- as.numeric(Apex.Data.apex$P_Cond_2)
+
+Ref_v_2 <- Apex.Data.apex %>%
+  lm(P_Cond_1 ~ P_Cond_2, data = .)
+
+coef(Ref_v_2)
+
+summary(Apex.Data.apex %>%
+  lm(P_Cond_1 ~ P_Cond_2, data = .))
+
+coeffs <- coef(Ref_v_2)
+r_squared <- summary(Ref_v_2)$r.squared
+
+eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+
+
+ggplot(Apex.Data.apex, aes(x = P_Cond_2, y = P_Cond_1)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x.npc = "left", label.y.npc = 0.95,
+    size = 5,
+    color = "black"
+  ) 
+  labs(
+    title = "Linear Regression: P_Cond_2 vs P_Cond_1",
+    x = "P_Cond_2",
+    y = "P_Cond_1"
+  ) +
+  theme_minimal()
+
+```
+
+#Correcting Probe 2 to the reference Probe 1
+```{r}
+
+#P_Cond_1 = Reference probe
+#y=5.99+0.90x
+
+#correct the probe for the relationship (y=mx+b) with the reference probe
+Apex.Data.apex$P_Cond_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_2)
+
+Apex.Data.apex$test <- Apex.Data.apex$P_Cond_2_Corr - Apex.Data.apex$P_Cond_1
+mean(Apex.Data.apex$test)
+
+ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+  labs(
+    title = "Linear Regression: P_Cond_2 vs P_Cond_2_Corr",
+    x = "P_Cond_1",
+    y = "P_Cond_2_Corr"
+  ) +
+  theme_minimal()
+
+
 ```
