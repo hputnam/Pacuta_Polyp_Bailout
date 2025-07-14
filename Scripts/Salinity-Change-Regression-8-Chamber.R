@@ -35,3 +35,4 @@ ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
        x = "Time (hours since start)",
        y = "Salinity (ppt)") +
   theme_minimal()
+
