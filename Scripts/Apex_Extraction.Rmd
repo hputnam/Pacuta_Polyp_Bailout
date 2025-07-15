@@ -71,8 +71,8 @@ str(Apex.Data.apex)
 
 #convert date time to POSIXct datetime and probe data to numeric
 Apex.Data.apex <- Apex.Data.apex %>%
-  mutate(date = mdy_hms(date)) %>%  # Convert the date to a POSIXct datetime
-  mutate(across(starts_with("P_"), ~ as.numeric(.)))  # Convert temperature columns to numeric
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
+  mutate(across(starts_with("P_"), ~ as.numeric(.)))
 
 #view dataframe attribues
 str(Apex.Data.apex)
@@ -107,7 +107,7 @@ ggsave("Outputs apex_temperatures.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
-# Probe cross calibration
+# Conductivity Probe Cross Calibration
 ```{r}
 
 str(Apex.Data.apex)
@@ -115,16 +115,16 @@ str(Apex.Data.apex)
 Apex.Data.apex$P_Cond_1 <- as.numeric(Apex.Data.apex$P_Cond_1)
 Apex.Data.apex$P_Cond_2 <- as.numeric(Apex.Data.apex$P_Cond_2)
 
-Ref_v_2 <- Apex.Data.apex %>%
+Ref_c_2 <- Apex.Data.apex %>%
   lm(P_Cond_1 ~ P_Cond_2, data = .)
 
-coef(Ref_v_2)
+coef(Ref_c_2)
 
 summary(Apex.Data.apex %>%
   lm(P_Cond_1 ~ P_Cond_2, data = .))
 
-coeffs <- coef(Ref_v_2)
-r_squared <- summary(Ref_v_2)$r.squared
+coeffs <- coef(Ref_c_2)
+r_squared <- summary(Ref_c_2)$r.squared
 
 eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
 
@@ -151,7 +151,9 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_2, y = P_Cond_1)) +
 
 ```
 
-#Correcting Probe 2 to the reference Probe 1
+
+
+#Correcting Probe 2 to the reference Probe 1 for conductivity probes
 ```{r}
 
 #P_Cond_1 = Reference probe
@@ -160,8 +162,8 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_2, y = P_Cond_1)) +
 #correct the probe for the relationship (y=mx+b) with the reference probe
 Apex.Data.apex$P_Cond_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_2)
 
-Apex.Data.apex$test <- Apex.Data.apex$P_Cond_2_Corr - Apex.Data.apex$P_Cond_1
-mean(Apex.Data.apex$test)
+Apex.Data.apex$test_cond_2 <- Apex.Data.apex$P_Cond_2_Corr - Apex.Data.apex$P_Cond_1
+mean(Apex.Data.apex$test_cond_2)
 
 ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
   geom_point(color = "blue", alpha = 0.6) +
@@ -176,3 +178,153 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
 
 
 ```
+
+# Temperature Probe Cross Calibration
+```{r}
+str(Apex.Data.apex)
+
+Apex.Data.apex$P_Tmp_1 <- as.numeric(Apex.Data.apex$P_Tmp_1)
+Apex.Data.apex$P_Tmp_2 <- as.numeric(Apex.Data.apex$P_Tmp_2)
+
+Ref_t_2 <- Apex.Data.apex %>%
+  lm(P_Tmp_1 ~ P_Tmp_2, data = .)
+
+coef(Ref_t_2)
+
+summary(Apex.Data.apex %>%
+  lm(P_Tmp_1 ~ P_Tmp_2, data = .))
+
+coeffs <- coef(Ref_t_2)
+r_squared <- summary(Ref_t_2)$r.squared
+
+eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+
+
+ggplot(Apex.Data.apex, aes(x = P_Tmp_2, y = P_Tmp_1)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x.npc = "left", label.y.npc = 0.95,
+    size = 5,
+    color = "black"
+  ) 
+  labs(
+    title = "Linear Regression: P_Tmp_2 vs P_Tmp_1",
+    x = "P_Tmp_2",
+    y = "P_Tmp_1"
+  ) +
+  theme_minimal()
+
+
+
+
+```
+
+#Correcting Temp Probe 2 to Reference Temp Probe 1
+```{r}
+
+#P_Tmp_1 = Reference probe
+#y=2.31+0.917x
+
+#correct the probe for the relationship (y=mx+b) with the reference probe
+Apex.Data.apex$P_Tmp_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Tmp_2)
+
+Apex.Data.apex$test_Tmp_2 <- Apex.Data.apex$P_Tmp_2_Corr - Apex.Data.apex$P_Tmp_1
+mean(Apex.Data.apex$test_Tmp_2)
+
+ggplot(Apex.Data.apex, aes(x = P_Tmp_1, y = P_Tmp_2_Corr)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+  labs(
+    title = "Linear Regression: P_Tmp_2 vs P_Tmp_2_Corr",
+    x = "P_Tmp_1",
+    y = "P_Tmp_2_Corr"
+  ) +
+  theme_minimal()
+
+
+
+
+``` 
+
+
+# pH Probe Cross Calibration
+```{r}
+str(Apex.Data.apex)
+
+Apex.Data.apex$P_pH_1 <- as.numeric(Apex.Data.apex$P_pH_1)
+Apex.Data.apex$P_pH_2 <- as.numeric(Apex.Data.apex$P_pH_2)
+
+Ref_p_2 <- Apex.Data.apex %>%
+  lm(P_pH_1 ~ P_pH_2, data = .)
+
+coef(Ref_p_2)
+
+summary(Apex.Data.apex %>%
+  lm(P_pH_1 ~ P_pH_2, data = .))
+
+coeffs <- coef(Ref_p_2)
+r_squared <- summary(Ref_p_2)$r.squared
+
+eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+
+
+ggplot(Apex.Data.apex, aes(x = P_pH_2, y = P_pH_1)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x.npc = "left", label.y.npc = 0.95,
+    size = 5,
+    color = "black"
+  ) 
+  labs(
+    title = "Linear Regression: P_pH_2 vs P_pH_1",
+    x = "P_pH_2",
+    y = "P_pH_1"
+  ) +
+  theme_minimal()
+
+
+
+
+```
+
+#Correcting pH Probe 2 to Reference pH Probe 1
+
+```{r}
+
+#P_pH_1 = Reference probe
+#y=5.71+0.37x
+
+#correct the probe for the relationship (y=mx+b) with the reference probe
+Apex.Data.apex$P_pH_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_pH_2)
+
+Apex.Data.apex$test_pH_2 <- Apex.Data.apex$P_pH_2_Corr - Apex.Data.apex$P_pH_1
+mean(Apex.Data.apex$test_pH_2)
+
+ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_2_Corr)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+  labs(
+    title = "Linear Regression: P_pH_2 vs P_pH_2_Corr",
+    x = "P_pH_1",
+    y = "P_pH_2_Corr"
+  ) +
+  theme_minimal()
+
+
+
+
+``` 
