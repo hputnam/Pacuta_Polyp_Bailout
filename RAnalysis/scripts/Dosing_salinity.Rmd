@@ -14,8 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 S0 <- 35        # Initial salinity
 S_target <- 56  # Target salinity
 S_added <- 70   # Added water salinity
-V <- 23         # Tank volume
-dose_volume <- 1  # Constant dose volume (mL)
+V <- 80         # Tank volume
+dose_volume <- 3  # Constant dose volume (mL)
 duration_hours <- 24
 
 # Solve for number of doses (n)

@@ -1,6 +1,6 @@
 ---
 title: "Apex_Data_Extraction"
-author: "HM Putnam"
+author: "HM Putnam updated by Thatcher Johnstone-Wright"
 date: "2024-12-09"
 output: html_document
 ---
@@ -18,7 +18,7 @@ library(ggpmisc)
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250711&days=3") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250717&days=3") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -31,13 +31,16 @@ Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to datafram
 #Tmp_2 = probe.value.2
 #Cond_2 = probe.value.3
 #pH_2 = probe.value.5
+#Tmp_3 = probe.value.7
+#Cond_3 = probe.Value.8
+#pH_3 = probe.value.6
 
 #select columns of interest by name from df
 Apex.Data.apex <- Apex.Data %>%
-  select(c(date, probe.value, probe.value.1, probe.value.2, probe.value.3, probe.value.4, probe.value.5))
+  select(c(date, probe.value, probe.value.1, probe.value.4, probe.value.2, probe.value.3, probe.value.5, probe.value.7, probe.value.8, probe.value.6))
 
 #rename columns
-colnames(Apex.Data.apex) <- c("date", "P_Tmp_1", "P_Cond_1", "P_Tmp_2", "P_Cond_2", "P_pH_1", "P_pH_2")
+colnames(Apex.Data.apex) <- c("date", "P_Tmp_1", "P_Cond_1", "P_pH_1", "P_Tmp_2", "P_Cond_2", "P_pH_2", "P_Tmp_3", "P_Cond_3", "P_pH_3")
 
 #Check Current system time zone and time
 current_tz <- Sys.timezone() 
@@ -86,7 +89,7 @@ Apex.Data_long$Type <-Apex.Data_long$probe
 Apex.Data_long$Type <- gsub("P_" ,"", Apex.Data_long$Type)
 Apex.Data_long$Type <- gsub("_1" ,"", Apex.Data_long$Type)
 Apex.Data_long$Type <- gsub("_2" ,"", Apex.Data_long$Type)
-
+Apex.Data_long$Type <- gsub("_3" ,"", Apex.Data_long$Type)
 
 str(Apex.Data_long)
 unique(Apex.Data_long$probe)
