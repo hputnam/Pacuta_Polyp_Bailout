@@ -12,13 +12,14 @@ library("plyr")
 library("lubridate")
 library("dplyr")
 library("tidyverse")
-library(ggpmisc)
+library("ggpmisc")
+
 ```
 
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250717&days=3") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250719&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -62,11 +63,13 @@ date <- Sys.Date() #set todays date
 
 Apex.Data.apex <- na.omit(Apex.Data.apex)
 
-write.csv(Apex.Data.apex, paste0("Data",date,"_","Apex.Data.csv")) #write file to save data
+apex_pull_date <- "250719"
+
+write.csv(Apex.Data.apex, paste0("Data/",apex_pull_date,"_","Apex.Data.csv")) #write file to save data
 
 ```
 
-Plot Apex temperature data
+#Plot Apex data Cond, pH, and Temp
 ```{r}
 
 #view dataframe attribues
@@ -110,7 +113,7 @@ ggsave("Outputs apex_temperatures.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
-# Conductivity Probe Cross Calibration
+# Conductivity Probe Cross Calibration Probe_1 to Probe_2
 ```{r}
 
 str(Apex.Data.apex)
@@ -160,7 +163,6 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_2, y = P_Cond_1)) +
 ```{r}
 
 #P_Cond_1 = Reference probe
-#y=5.99+0.90x
 
 #correct the probe for the relationship (y=mx+b) with the reference probe
 Apex.Data.apex$P_Cond_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_2)
@@ -173,7 +175,7 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
   geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
   #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
   labs(
-    title = "Linear Regression: P_Cond_2 vs P_Cond_2_Corr",
+    title = "Linear Regression: P_Cond_1 vs P_Cond_2_Corr",
     x = "P_Cond_1",
     y = "P_Cond_2_Corr"
   ) +
@@ -182,7 +184,77 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
 
 ```
 
-# Temperature Probe Cross Calibration
+# Conductivity Probe Cross Calibration Probe_1 to Probe_3
+```{r}
+
+str(Apex.Data.apex)
+
+Apex.Data.apex$P_Cond_1 <- as.numeric(Apex.Data.apex$P_Cond_1)
+Apex.Data.apex$P_Cond_3 <- as.numeric(Apex.Data.apex$P_Cond_3)
+
+Ref_c_3 <- Apex.Data.apex %>%
+  lm(P_Cond_1 ~ P_Cond_3, data = .)
+
+coef(Ref_c_3)
+
+summary(Apex.Data.apex %>%
+  lm(P_Cond_1 ~ P_Cond_3, data = .))
+
+coeffs <- coef(Ref_c_3)
+r_squared <- summary(Ref_c_3)$r.squared
+
+eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+
+
+ggplot(Apex.Data.apex, aes(x = P_Cond_3, y = P_Cond_1)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x.npc = "left", label.y.npc = 0.95,
+    size = 5,
+    color = "black"
+  ) 
+  labs(
+    title = "Linear Regression: P_Cond_3 vs P_Cond_1",
+    x = "P_Cond_3",
+    y = "P_Cond_1"
+  ) +
+  theme_minimal()
+
+```
+
+#Correcting Probe 3 to the reference Probe 1 for conductivity probes
+```{r}
+
+#P_Cond_1 = Reference probe
+
+
+#correct the probe for the relationship (y=mx+b) with the reference probe
+Apex.Data.apex$P_Cond_3_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_3)
+
+Apex.Data.apex$test_cond_3 <- Apex.Data.apex$P_Cond_3_Corr - Apex.Data.apex$P_Cond_1
+mean(Apex.Data.apex$test_cond_3)
+
+ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_3_Corr)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+  labs(
+    title = "Linear Regression: P_Cond_1 vs P_Cond_3_Corr",
+    x = "P_Cond_1",
+    y = "P_Cond_3_Corr"
+  ) +
+  theme_minimal()
+
+
+```
+
+# Temperature Probe Cross Calibration 2 to 1
 ```{r}
 str(Apex.Data.apex)
 
@@ -257,7 +329,7 @@ ggplot(Apex.Data.apex, aes(x = P_Tmp_1, y = P_Tmp_2_Corr)) +
 ``` 
 
 
-# pH Probe Cross Calibration
+# pH Probe Cross Calibration 2 to 1
 ```{r}
 str(Apex.Data.apex)
 
@@ -324,6 +396,80 @@ ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_2_Corr)) +
     title = "Linear Regression: P_pH_2 vs P_pH_2_Corr",
     x = "P_pH_1",
     y = "P_pH_2_Corr"
+  ) +
+  theme_minimal()
+
+
+
+
+``` 
+
+# pH Probe Cross Calibration 3 to 1
+```{r}
+str(Apex.Data.apex)
+
+Apex.Data.apex$P_pH_1 <- as.numeric(Apex.Data.apex$P_pH_1)
+Apex.Data.apex$P_pH_3 <- as.numeric(Apex.Data.apex$P_pH_3)
+
+Ref_p_3 <- Apex.Data.apex %>%
+  lm(P_pH_1 ~ P_pH_3, data = .)
+
+coef(Ref_p_3)
+
+summary(Apex.Data.apex %>%
+  lm(P_pH_1 ~ P_pH_3, data = .))
+
+coeffs <- coef(Ref_p_3)
+r_squared <- summary(Ref_p_3)$r.squared
+
+eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+
+
+ggplot(Apex.Data.apex, aes(x = P_pH_3, y = P_pH_1)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE,
+    label.x.npc = "left", label.y.npc = 0.95,
+    size = 5,
+    color = "black"
+  ) 
+  labs(
+    title = "Linear Regression: P_pH_3 vs P_pH_1",
+    x = "P_pH_3",
+    y = "P_pH_1"
+  ) +
+  theme_minimal()
+
+
+
+
+```
+
+#Correcting pH Probe 3 to Reference pH Probe 1
+
+```{r}
+
+#P_pH_1 = Reference probe
+
+#correct the probe for the relationship (y=mx+b) with the reference probe
+Apex.Data.apex$P_pH_3_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_pH_3)
+
+Apex.Data.apex$test_pH_3 <- Apex.Data.apex$P_pH_3_Corr - Apex.Data.apex$P_pH_1
+mean(Apex.Data.apex$test_pH_3)
+
+ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_3_Corr)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
+  labs(
+    title = "Linear Regression: P_pH_1 vs P_pH_3_Corr",
+    x = "P_pH_1",
+    y = "P_pH_3_Corr"
   ) +
   theme_minimal()
 
