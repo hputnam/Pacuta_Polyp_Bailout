@@ -19,7 +19,7 @@ library("ggpmisc")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250719&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250721&days=1") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -63,9 +63,6 @@ date <- Sys.Date() #set todays date
 
 Apex.Data.apex <- na.omit(Apex.Data.apex)
 
-apex_pull_date <- "250719"
-
-write.csv(Apex.Data.apex, paste0("Data/",apex_pull_date,"_","Apex.Data.csv")) #write file to save data
 
 ```
 
@@ -109,7 +106,7 @@ apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color=probe), group
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 apex.data 
 
-ggsave("Outputs apex_temperatures.pdf", plot=apex.data, height=6, width=8)
+ggsave("Outputs_apex_probes_.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
@@ -254,79 +251,9 @@ ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_3_Corr)) +
 
 ```
 
-# Temperature Probe Cross Calibration 2 to 1
-```{r}
-str(Apex.Data.apex)
-
-Apex.Data.apex$P_Tmp_1 <- as.numeric(Apex.Data.apex$P_Tmp_1)
-Apex.Data.apex$P_Tmp_2 <- as.numeric(Apex.Data.apex$P_Tmp_2)
-
-Ref_t_2 <- Apex.Data.apex %>%
-  lm(P_Tmp_1 ~ P_Tmp_2, data = .)
-
-coef(Ref_t_2)
-
-summary(Apex.Data.apex %>%
-  lm(P_Tmp_1 ~ P_Tmp_2, data = .))
-
-coeffs <- coef(Ref_t_2)
-r_squared <- summary(Ref_t_2)$r.squared
-
-eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
-
-
-ggplot(Apex.Data.apex, aes(x = P_Tmp_2, y = P_Tmp_1)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "left", label.y.npc = 0.95,
-    size = 5,
-    color = "black"
-  ) 
-  labs(
-    title = "Linear Regression: P_Tmp_2 vs P_Tmp_1",
-    x = "P_Tmp_2",
-    y = "P_Tmp_1"
-  ) +
-  theme_minimal()
 
 
 
-
-```
-
-#Correcting Temp Probe 2 to Reference Temp Probe 1
-```{r}
-
-#P_Tmp_1 = Reference probe
-#y=2.31+0.917x
-
-#correct the probe for the relationship (y=mx+b) with the reference probe
-Apex.Data.apex$P_Tmp_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Tmp_2)
-
-Apex.Data.apex$test_Tmp_2 <- Apex.Data.apex$P_Tmp_2_Corr - Apex.Data.apex$P_Tmp_1
-mean(Apex.Data.apex$test_Tmp_2)
-
-ggplot(Apex.Data.apex, aes(x = P_Tmp_1, y = P_Tmp_2_Corr)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-  labs(
-    title = "Linear Regression: P_Tmp_2 vs P_Tmp_2_Corr",
-    x = "P_Tmp_1",
-    y = "P_Tmp_2_Corr"
-  ) +
-  theme_minimal()
-
-
-
-
-``` 
 
 
 # pH Probe Cross Calibration 2 to 1
@@ -477,3 +404,18 @@ ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_3_Corr)) +
 
 
 ``` 
+
+# Create Data set with Date and Time and corrected probe
+```{r}
+#Make Final Data Set
+Apex.Final <- Apex.Data.apex %>%
+  select(date, P_Cond_1, P_Cond_2_Corr, P_Cond_3_Corr, P_Tmp_1, P_Tmp_2, P_Tmp_3, P_pH_1, P_pH_2_Corr, P_pH_3_Corr)  
+         
+#rename columns
+colnames(Apex.Final) <- c("date", "P_Cond_1", "P_Cond_2", "P_Cond_3", "P_Tmp_1", "P_Tmp_2", "P_Tmp_3", "P_pH_1", "P_pH_2", "P_pH_3")
+
+apex_pull_date <- "20250719"
+
+write.csv(Apex.Final, paste0("Data/",apex_pull_date,"_","Apex.Final.csv")) #write file to save data
+
+```
