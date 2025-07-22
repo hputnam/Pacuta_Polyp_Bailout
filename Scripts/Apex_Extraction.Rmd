@@ -150,152 +150,39 @@ subset_cond_probes <- subset_cond_probes %>%
 
 # View result
 head(subset_cond_probes)
-```
-
-# Conductivity Probe Cross Calibration Probe_1 to Probe_2
-```{r}
-
-str(Apex.Data.apex)
-
-Apex.Data.apex$P_Cond_1 <- as.numeric(Apex.Data.apex$P_Cond_1)
-Apex.Data.apex$P_Cond_2 <- as.numeric(Apex.Data.apex$P_Cond_2)
-
-Ref_c_2 <- Apex.Data.apex %>%
-  lm(P_Cond_1 ~ P_Cond_2, data = .)
-
-coef(Ref_c_2)
-
-summary(Apex.Data.apex %>%
-  lm(P_Cond_1 ~ P_Cond_2, data = .))
-
-coeffs <- coef(Ref_c_2)
-r_squared <- summary(Ref_c_2)$r.squared
-
-eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
+# Run linear regressions for each probe
+lm_cond1 <- lm(Standard ~ P_Cond_1, data = subset_cond_probes)
+lm_cond2 <- lm(Standard ~ P_Cond_2, data = subset_cond_probes)
+lm_cond3 <- lm(Standard ~ P_Cond_3, data = subset_cond_probes)
 
 
-ggplot(Apex.Data.apex, aes(x = P_Cond_2, y = P_Cond_1)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "left", label.y.npc = 0.95,
-    size = 5,
-    color = "black"
-  ) 
-  labs(
-    title = "Linear Regression: P_Cond_2 vs P_Cond_1",
-    x = "P_Cond_2",
-    y = "P_Cond_1"
-  ) +
-  theme_minimal()
+plot(subset_cond_probes$P_Cond_1,subset_cond_probes$Standard)
+
+
+subset_cond_probes$P_Cond_1_Corr <- coef(lm_cond1)[1]+(coef(lm_cond1)[2]*subset_cond_probes$P_Cond_1)
+subset_cond_probes$P_Cond_2_Corr <- coef(lm_cond2)[1]+(coef(lm_cond2)[2]*subset_cond_probes$P_Cond_2)
+subset_cond_probes$P_Cond_3_Corr <- coef(lm_cond3)[1]+(coef(lm_cond3)[2]*subset_cond_probes$P_Cond_3)
+
+# Running Apex.Data.apex through the LM equations 
+Apex.Data.apex$P_Cond_1_Corr <- coef(lm_cond1)[1]+(coef(lm_cond1)[2]*Apex.Data.apex$P_Cond_1)
+Apex.Data.apex$P_Cond_2_Corr <- coef(lm_cond2)[1]+(coef(lm_cond2)[2]*Apex.Data.apex$P_Cond_2)
+Apex.Data.apex$P_Cond_3_Corr <- coef(lm_cond3)[1]+(coef(lm_cond3)[2]*Apex.Data.apex$P_Cond_3)
+# Fit regressions to match P_Cond_2_Corr and P_Cond_3_Corr to P_Cond_1_Corr
+Ref_corr_2 <- lm(P_Cond_1_Corr ~ P_Cond_2_Corr, data = subset_cond_probes)
+Ref_corr_3 <- lm(P_Cond_1_Corr ~ P_Cond_3_Corr, data = subset_cond_probes)
+
+# Extract coefficients
+coef_corr_2 <- coef(Ref_corr_2)
+coef_corr_3 <- coef(Ref_corr_3)
+
+# Manually correct P_Cond_2_Corr and P_Cond_3_Corr to match P_Cond_1_Corr scale
+Apex.Data.apex$P_Cond_2_Corr2 <- coef_corr_2[1] + coef_corr_2[2] * Apex.Data.apex$P_Cond_2_Corr
+Apex.Data.apex$P_Cond_3_Corr2 <- coef_corr_3[1] + coef_corr_3[2] * Apex.Data.apex$P_Cond_3_Corr
+# Create clean dataset with date and fully corrected conductivity values
+Apex.Corrected <- Apex.Data.apex %>%
+  select(date, P_Cond_1_Corr, P_Cond_2_Corr2, P_Cond_3_Corr2)
 
 ```
-
-
-
-#Correcting Probe 2 to the reference Probe 1 for conductivity probes
-```{r}
-
-#P_Cond_1 = Reference probe
-
-#correct the probe for the relationship (y=mx+b) with the reference probe
-Apex.Data.apex$P_Cond_2_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_2)
-
-Apex.Data.apex$test_cond_2 <- Apex.Data.apex$P_Cond_2_Corr - Apex.Data.apex$P_Cond_1
-mean(Apex.Data.apex$test_cond_2)
-
-ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_2_Corr)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-  labs(
-    title = "Linear Regression: P_Cond_1 vs P_Cond_2_Corr",
-    x = "P_Cond_1",
-    y = "P_Cond_2_Corr"
-  ) +
-  theme_minimal()
-
-
-```
-
-# Conductivity Probe Cross Calibration Probe_1 to Probe_3
-```{r}
-
-str(Apex.Data.apex)
-
-Apex.Data.apex$P_Cond_1 <- as.numeric(Apex.Data.apex$P_Cond_1)
-Apex.Data.apex$P_Cond_3 <- as.numeric(Apex.Data.apex$P_Cond_3)
-
-Ref_c_3 <- Apex.Data.apex %>%
-  lm(P_Cond_1 ~ P_Cond_3, data = .)
-
-coef(Ref_c_3)
-
-summary(Apex.Data.apex %>%
-  lm(P_Cond_1 ~ P_Cond_3, data = .))
-
-coeffs <- coef(Ref_c_3)
-r_squared <- summary(Ref_c_3)$r.squared
-
-eq_label <- sprintf("y = %.2f + %.2fx, R² = %.3f", coeffs[1], coeffs[2], r_squared)
-
-
-ggplot(Apex.Data.apex, aes(x = P_Cond_3, y = P_Cond_1)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-    geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  stat_poly_eq(
-    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
-    formula = y ~ x,
-    parse = TRUE,
-    label.x.npc = "left", label.y.npc = 0.95,
-    size = 5,
-    color = "black"
-  ) 
-  labs(
-    title = "Linear Regression: P_Cond_3 vs P_Cond_1",
-    x = "P_Cond_3",
-    y = "P_Cond_1"
-  ) +
-  theme_minimal()
-
-```
-
-#Correcting Probe 3 to the reference Probe 1 for conductivity probes
-```{r}
-
-#P_Cond_1 = Reference probe
-
-
-#correct the probe for the relationship (y=mx+b) with the reference probe
-Apex.Data.apex$P_Cond_3_Corr <- coeffs[1]+(coeffs[2]*Apex.Data.apex$P_Cond_3)
-
-Apex.Data.apex$test_cond_3 <- Apex.Data.apex$P_Cond_3_Corr - Apex.Data.apex$P_Cond_1
-mean(Apex.Data.apex$test_cond_3)
-
-ggplot(Apex.Data.apex, aes(x = P_Cond_1, y = P_Cond_3_Corr)) +
-  geom_point(color = "blue", alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
-  #annotate("text", x = 2, y = 60, label = eq_label, hjust = 0, size = 5)+
-  labs(
-    title = "Linear Regression: P_Cond_1 vs P_Cond_3_Corr",
-    x = "P_Cond_1",
-    y = "P_Cond_3_Corr"
-  ) +
-  theme_minimal()
-
-
-```
-
-
-
-
 
 
 # pH Probe Cross Calibration 2 to 1
