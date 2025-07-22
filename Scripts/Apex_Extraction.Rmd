@@ -110,6 +110,48 @@ ggsave("Outputs/apex_probes_.pdf", plot=apex.data, height=6, width=8)
 
 ```
 
+
+# Making subset of apex 0, 53, and 80 baths
+```{r}
+# Define time intervals
+start1 <- as.POSIXct("2025-07-21 09:14:00")
+end1   <- as.POSIXct("2025-07-21 10:35:00")
+
+start2 <- as.POSIXct("2025-07-21 10:53:00")
+end2   <- as.POSIXct("2025-07-21 11:09:00")
+
+start3 <- as.POSIXct("2025-07-21 11:11:00")
+end3   <- as.POSIXct("2025-07-21 11:28:00")
+
+# Subset for each time range
+subset1 <- Apex.Data.apex %>%
+  filter(date >= start1 & date <= end1)
+
+subset2 <- Apex.Data.apex %>%
+  filter(date >= start2 & date <= end2)
+
+subset3 <- Apex.Data.apex %>%
+  filter(date >= start3 & date <= end3)
+
+# Combine the subsets
+subset_combined <- bind_rows(subset1, subset2, subset3)
+
+# Select relevant columns
+subset_cond_probes <- subset_combined %>%
+  select(date, P_Cond_1, P_Cond_2, P_Cond_3)
+# Add standard values based on the time intervals
+subset_cond_probes <- subset_cond_probes %>%
+  mutate(Standard = case_when(
+    date >= start1 & date <= end1 ~ 0,
+    date >= start2 & date <= end2 ~ 53,
+    date >= start3 & date <= end3 ~ 80,
+    TRUE ~ NA_real_
+  ))
+
+# View result
+head(subset_cond_probes)
+```
+
 # Conductivity Probe Cross Calibration Probe_1 to Probe_2
 ```{r}
 
