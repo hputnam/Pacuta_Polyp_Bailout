@@ -62,7 +62,8 @@ date <- Sys.Date() #set todays date
 # 
 
 Apex.Data.apex <- na.omit(Apex.Data.apex)
-
+today_date <- format(Sys.Date(), "%Y%m%d")
+write.csv(Apex.Data.apex, paste0("Data/", today_date,"_","ApexRawData_.csv")) #write file to save data
 
 ```
 
@@ -124,13 +125,13 @@ start3 <- as.POSIXct("2025-07-21 11:11:00")
 end3   <- as.POSIXct("2025-07-21 11:28:00")
 
 # Subset for each time range
-subset1 <- Apex.Data.apex %>%
+subset1 <-read.csv ("Data/20250723_ApexRawData_.csv") %>%
   filter(date >= start1 & date <= end1)
 
-subset2 <- Apex.Data.apex %>%
+subset2 <-read.csv("Data/20250723_ApexRawData_.csv") %>%
   filter(date >= start2 & date <= end2)
 
-subset3 <- Apex.Data.apex %>%
+subset3 <-read.csv("Data/20250723_ApexRawData_.csv")%>%
   filter(date >= start3 & date <= end3)
 
 # Combine the subsets
@@ -338,55 +339,13 @@ ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_3_Corr)) +
 ```{r}
 #Make Final Data Set
 Apex.Final <- Apex.Data.apex %>%
-  select(date, P_Cond_1, P_Cond_2_Corr, P_Cond_3_Corr, P_Tmp_1, P_Tmp_2, P_Tmp_3, P_pH_1, P_pH_2_Corr, P_pH_3_Corr)  
+  select(date, P_Cond_1_Corr, P_Cond_2_Corr2, P_Cond_3_Corr2, P_Tmp_1, P_Tmp_2, P_Tmp_3, P_pH_1, P_pH_2_Corr, P_pH_3_Corr)  
          
 #rename columns
 colnames(Apex.Final) <- c("date", "P_Cond_1", "P_Cond_2", "P_Cond_3", "P_Tmp_1", "P_Tmp_2", "P_Tmp_3", "P_pH_1", "P_pH_2", "P_pH_3")
 
-# Convert conductivity (mS/cm) to salinity (ppt) using a simple empirical formula
-Apex.Final <- Apex.Final %>%
-   mutate(
-    Sal_1 = P_Cond_1 * 0.6604,
-    Sal_2 = P_Cond_2 * 0.6604,
-    Sal_3 = P_Cond_3 * 0.6604
-  )
-Apex.Final_Sal <- Apex.Final %>%
- select(date, Sal_1, Sal_2, Sal_3, P_Tmp_1, P_Tmp_2, P_Tmp_3, P_pH_1, P_pH_2, P_pH_3)
-    
-apex_pull_date <- "20250719"
-
-write.csv(Apex.Final, paste0("Data/",apex_pull_date,"_","Apex.Final.csv")) #write file to save data
 
 ```
 
-# Run Regressions of Salinity
-```{r}
-# Ensure time is numeric and data is clean
-Apex.Final_Sal <- Apex.Final %>%
-  mutate(Time_Hours = as.numeric(difftime(date, min(date), units = "hours"))) %>%
-  select(date, Time_Hours, Sal_1, Sal_2, Sal_3)
 
-# Reshape data to long format
-Sal_long <- Apex.Final_Sal %>%
-  pivot_longer(cols = starts_with("Sal_"), names_to = "Probe", values_to = "Salinity")
 
-# Run linear regression for each probe vs Time_Hours and extract slope
-Sal_slopes <- Sal_long %>%
-  group_by(Probe) %>%
-  do({
-    model <- lm(Salinity ~ Time_Hours, data = .)
-    data.frame(Slope = coef(model)[["Time_Hours"]])
-  })
-
-# Print the slopes
-print(Sal_slopes)
-
-# Plot: Conductivity over Time by Probe
-ggplot(Sal_long, aes(x = Time_Hours, y = Salinity, color = Probe)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Salinity over Time by Probe",
-       x = "Time (hours since start)",
-       y = "Salinity") +
-  theme_minimal()
-```
