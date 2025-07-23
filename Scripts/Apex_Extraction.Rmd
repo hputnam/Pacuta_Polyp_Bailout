@@ -63,6 +63,9 @@ date <- Sys.Date() #set todays date
 
 Apex.Data.apex <- na.omit(Apex.Data.apex)
 today_date <- format(Sys.Date(), "%Y%m%d")
+if (!dir.exists("Data")) {
+  dir.create("Data")
+}
 write.csv(Apex.Data.apex, paste0("Data/", today_date,"_","ApexRawData_.csv")) #write file to save data
 
 ```
