@@ -19,7 +19,7 @@ library("ggpmisc")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250721&days=1") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250723&days=1") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -63,9 +63,7 @@ date <- Sys.Date() #set todays date
 
 Apex.Data.apex <- na.omit(Apex.Data.apex)
 today_date <- format(Sys.Date(), "%Y%m%d")
-if (!dir.exists("Data")) {
-  dir.create("Data")
-}
+
 write.csv(Apex.Data.apex, paste0("Data/", today_date,"_","ApexRawData_.csv")) #write file to save data
 
 ```
@@ -128,13 +126,17 @@ start3 <- as.POSIXct("2025-07-21 11:11:00")
 end3   <- as.POSIXct("2025-07-21 11:28:00")
 
 # Subset for each time range
-subset1 <-read.csv ("Data/20250723_ApexRawData_.csv") %>%
+
+subset1 <- read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
+   mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start1 & date <= end1)
 
-subset2 <-read.csv("Data/20250723_ApexRawData_.csv") %>%
+subset2 <-read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start2 & date <= end2)
 
-subset3 <-read.csv("Data/20250723_ApexRawData_.csv")%>%
+subset3 <-read.csv("Data/Calibration_Apex_Data_20250721.csv")%>%
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start3 & date <= end3)
 
 # Combine the subsets
