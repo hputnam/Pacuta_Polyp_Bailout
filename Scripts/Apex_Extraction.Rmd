@@ -13,7 +13,7 @@ library("lubridate")
 library("dplyr")
 library("tidyverse")
 library("ggpmisc")
-
+library("gsw")
 ```
 
 
@@ -353,4 +353,21 @@ colnames(Apex.Final) <- c("date", "P_Cond_1", "P_Cond_2", "P_Cond_3", "P_Tmp_1",
 ```
 
 
+#salinity Calculation and column
+```{r}
+
+
+Apex.Final <- Apex.Final %>%
+  mutate(
+    Sal_1 = gsw_SP_from_C(C = P_Cond_1, t = P_Tmp_1, p = 0),
+    Sal_2 = gsw_SP_from_C(C = P_Cond_2, t = P_Tmp_2, p = 0),
+    Sal_3 = gsw_SP_from_C(C = P_Cond_3, t = P_Tmp_3, p = 0)
+  )
+
+
+
+head(Apex.Final)
+
+
+```
 
