@@ -19,52 +19,39 @@ library("gsw")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250724&days=1") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250802&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
 # clean,  arrange, and save data
 ```{r}
-#List of probe names from the Apex and the columns they are located in from the xml file
-#Cond_1 = probe.value
-#Cond_2 = probe.value.1
-#Tmp_2 = probe.value.4
-#Tmp_1 = probe.value.2
-#pH_1 = probe.value.3
-#pH_2 = probe.value.5
-#pH_3 = probe.value.7
-#Cond_3 = probe.Value.8
-#Tmp_3 = probe.value.6
-
-#select columns of interest by name from df
+# Select columns of interest by name from df
 Apex.Data.apex <- Apex.Data %>%
   select(c(date, probe.value, probe.value.1, probe.value.4, probe.value.2, probe.value.3, probe.value.5, probe.value.7, probe.value.8, probe.value.6))
 
-#rename columns
+# Rename columns
 colnames(Apex.Data.apex) <- c("date", "P_Cond_1", "P_Cond_2", "P_Tmp_2", "P_Tmp_1", "P_pH_1", "P_pH_2", "P_pH_3", "P_Cond_3", "P_Tmp_3")
 
-#Check Current system time zone and time
-current_tz <- Sys.timezone() 
+# Check current system time zone and time
+current_tz <- Sys.timezone()
 print(current_tz)
 
-# Set to correct timezone, time and correct date
-#Sys.setenv(TZ = "UTC03:00") 
-# correct_date <- Sys.Date()
-# print(correct_date)
- 
-date <- Sys.Date() #set todays date
-# time <- Sys.time()
-# time <- gsub(":" ,"_",time)
-# time <- gsub(" " ,"_",time)
-# today <- sub('..', '', date)
-# today <- gsub('-', '', today) 
-# today <- as.numeric(today)
-# 
+# Convert date string to POSIXct with correct time zone
+Apex.Data.apex <- Apex.Data.apex %>%
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S", tz = "America/New_York"))
 
+# Set today's date
+date <- Sys.Date()
+
+# Remove NAs
 Apex.Data.apex <- na.omit(Apex.Data.apex)
+
+# Format file name with today's date
 today_date <- format(Sys.Date(), "%Y%m%d")
 
-write.csv(Apex.Data.apex, paste0("Data/", today_date,"_","ApexRawData_.csv")) #write file to save data
+# Write cleaned data to CSV
+write.csv(Apex.Data.apex, paste0("Data/", today_date, "_", "ApexRawData_.csv"), row.names = FALSE)
+
 
 ```
 
@@ -76,7 +63,7 @@ str(Apex.Data.apex)
 
 #convert date time to POSIXct datetime and probe data to numeric
 Apex.Data.apex <- Apex.Data.apex %>%
-  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
+  mutate(date = as.POSIXct(date, tz = "", format = "%m/%d/%Y %H:%M:%S")) %>%
   mutate(across(starts_with("P_"), ~ as.numeric(.)))
 
 #view dataframe attribues
@@ -97,18 +84,21 @@ str(Apex.Data_long)
 unique(Apex.Data_long$probe)
 unique(Apex.Data_long$Type)
 
-#plot data 
-apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color=probe), group = Type) +
+# Plot data
+apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color = probe, group = Type)) +
   geom_point() +
   labs(x = "Time",
        y = "Value",
-       color = "Type") +
-  facet_wrap("Type", scales = "free")+
+       color = "Probe") +
+  facet_wrap(~ Type, scales = "free") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-apex.data 
 
-ggsave("Outputs/apex_probes_.pdf", plot=apex.data, height=6, width=8)
+# Display plot
+print(apex.data)
+
+# Save plot
+ggsave("Outputs/apex_probes_.pdf", plot = apex.data, height = 6, width = 8)
 
 ```
 
@@ -350,6 +340,32 @@ Apex.Final <- Apex.Data.apex %>%
          
 #rename columns
 colnames(Apex.Final) <- c("date", "P_Cond_1", "P_Cond_2", "P_Cond_3", "P_Tmp_1", "P_Tmp_2", "P_Tmp_3", "P_pH_1", "P_pH_2", "P_pH_3")
+# visualize data
+Apex.Data_long <- Apex.Final %>%
+  pivot_longer(
+    cols = -date,
+    names_to = "probe",
+    values_to = "value"
+  ) %>%
+  mutate(
+    Type = case_when(
+      grepl("Cond", probe) ~ "Conductivity",
+      grepl("Tmp", probe) ~ "Temperature",
+      grepl("pH", probe) ~ "pH",
+      TRUE ~ "Other"
+    )
+  )
+
+# Plot data
+apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color = probe, group = probe)) +
+  geom_point() +
+  labs(x = "Time", y = "Value", color = "Probe") +
+  facet_wrap(~ Type, scales = "free") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Display plot
+print(apex.data)
 
 
 ```
@@ -376,8 +392,8 @@ head(Apex.Final)
 
 # Visualizing Data from the trial/Filter time points
 ```{r} 
-start_time <- as.POSIXct("2025-07-24 08:01:00")
-end_time   <- as.POSIXct("2025-07-25 06:40:00")
+start_time <- as.POSIXct("2025-07-31 11:18:00")
+end_time   <- as.POSIXct("2025-08-01 07:40:00")
 filtered_data <- Apex.Final %>%
   filter(date >= start_time & date <= end_time)
 data_long <- filtered_data %>%
@@ -400,4 +416,4 @@ ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
        x = "Time (hours since 08:01 on 7/24)",
        y = "Salinity (ppt)") +
   theme_minimal()
-```
+``` 
