@@ -19,7 +19,7 @@ library("gsw")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250802&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250804&days=1.5") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -392,8 +392,8 @@ head(Apex.Final)
 
 # Visualizing Data from the trial/Filter time points
 ```{r} 
-start_time <- as.POSIXct("2025-07-31 11:18:00")
-end_time   <- as.POSIXct("2025-08-01 07:40:00")
+start_time <- as.POSIXct("2025-08-04 10:48:00")
+end_time   <- as.POSIXct("2025-08-05 10:24:00")
 filtered_data <- Apex.Final %>%
   filter(date >= start_time & date <= end_time)
 data_long <- filtered_data %>%
