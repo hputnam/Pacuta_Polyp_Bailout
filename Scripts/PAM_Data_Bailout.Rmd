@@ -1,0 +1,50 @@
+---
+title: "PAM_Bailouts_Script"
+author: "Thatcher Johnstone-Wright"
+date: "2025-08-19"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+# Step 2: Read data
+PAM <- read.csv("PAM_Data_Bailout.csv")
+
+# Step 3: Clean names, parse Date, make Group (A/B), and filter to A1-4/B1-4
+target_date <- as.Date("2025-08-19")  # <-- change this date (YYYY-MM-DD)
+
+PAM_day <- PAM %>%
+  # trim any stray spaces in column names (e.g., "Chamber ")
+  rename_with(trimws) %>%
+  # parse Date like 20250819 / 2025-08-19 / 08/19/2025
+  mutate(
+    Date    = as.Date(gsub("\\.0$", "", as.character(Date)),
+                      tryFormats = c("%Y%m%d", "%Y-%m-%d", "%m/%d/%Y")),
+    Chamber = trimws(Chamber),
+    Group   = substr(Chamber, 1, 1)
+  ) %>%
+  filter(grepl("^[AB][1-4]$", Chamber), Date == target_date) %>%
+  filter(!is.na(Y))
+
+# Step 4: Boxplot comparing A vs B for Y
+ggplot(PAM_day, aes(x = Group, y = Y)) +
+  ylab("PAM Y") + xlab("Group") +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(color = Chamber), width = 0.15, alpha = 0.7, size = 2) +
+  ggtitle(paste("A vs B on", target_date)) +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Step 5: Two-sample t-test (A vs B) for Y
+A <- subset(PAM_day, Group == "A", select = c(Y, Group))
+B <- subset(PAM_day, Group == "B", select = c(Y, Group))
+t.test(A$Y, B$Y)  # Welch t-test
+
+
+```
+
