@@ -19,7 +19,7 @@ library("gsw")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250804&days=1.5") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250814&days=1.5") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -97,15 +97,14 @@ apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color = probe, grou
 # Display plot
 print(apex.data)
 
-# Save plot
-ggsave("Outputs/apex_probes_.pdf", plot = apex.data, height = 6, width = 8)
 
 ```
 
 
-# Making subset of apex 0, 53, and 80 baths
 ```{r}
+# -----------------------------
 # Define time intervals
+# -----------------------------
 start1 <- as.POSIXct("2025-07-21 09:14:00")
 end1   <- as.POSIXct("2025-07-21 10:35:00")
 
@@ -115,73 +114,92 @@ end2   <- as.POSIXct("2025-07-21 11:09:00")
 start3 <- as.POSIXct("2025-07-21 11:11:00")
 end3   <- as.POSIXct("2025-07-21 11:28:00")
 
-# Subset for each time range
-
+# -----------------------------
+# Load & subset for each time range
+# -----------------------------
 subset1 <- read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
-   mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start1 & date <= end1)
 
-subset2 <-read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
+subset2 <- read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
   mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start2 & date <= end2)
 
-subset3 <-read.csv("Data/Calibration_Apex_Data_20250721.csv")%>%
+subset3 <- read.csv("Data/Calibration_Apex_Data_20250721.csv") %>%
   mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S")) %>%
   filter(date >= start3 & date <= end3)
 
-# Combine the subsets
+# -----------------------------
+# Combine the subsets & add standards
+# -----------------------------
 subset_combined <- bind_rows(subset1, subset2, subset3)
 
-# Select relevant columns
 subset_cond_probes <- subset_combined %>%
-  select(date, P_Cond_1, P_Cond_2, P_Cond_3)
-# Add standard values based on the time intervals
-subset_cond_probes <- subset_cond_probes %>%
-  mutate(Standard = case_when(
-    date >= start1 & date <= end1 ~ 0,
-    date >= start2 & date <= end2 ~ 53,
-    date >= start3 & date <= end3 ~ 80,
-    TRUE ~ NA_real_
-  ))
+  select(date, P_Cond_1, P_Cond_2, P_Cond_3) %>%
+  mutate(
+    Standard = dplyr::case_when(
+      date >= start1 & date <= end1 ~ 0,
+      date >= start2 & date <= end2 ~ 53,
+      date >= start3 & date <= end3 ~ 80,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  filter(!is.na(Standard))
 
-# View result
-head(subset_cond_probes)
-# Run linear regressions for each probe
+# -----------------------------
+# Bath calibrations: Standard ~ P_Cond_x
+# (per-probe absolute ppt correction)
+# -----------------------------
 lm_cond1 <- lm(Standard ~ P_Cond_1, data = subset_cond_probes)
 lm_cond2 <- lm(Standard ~ P_Cond_2, data = subset_cond_probes)
 lm_cond3 <- lm(Standard ~ P_Cond_3, data = subset_cond_probes)
 
+# Optional quick check
+# plot(subset_cond_probes$P_Cond_2, subset_cond_probes$Standard)
 
-plot(subset_cond_probes$P_Cond_1,subset_cond_probes$Standard)
+# -----------------------------
+# Apply bath corrections to full dataset
+# (Assumes Apex.Data.apex already exists in env)
+# -----------------------------
+Apex.Data.apex$P_Cond_1_Corr <- coef(lm_cond1)[1] + coef(lm_cond1)[2] * Apex.Data.apex$P_Cond_1
+Apex.Data.apex$P_Cond_2_Corr <- coef(lm_cond2)[1] + coef(lm_cond2)[2] * Apex.Data.apex$P_Cond_2
+Apex.Data.apex$P_Cond_3_Corr <- coef(lm_cond3)[1] + coef(lm_cond3)[2] * Apex.Data.apex$P_Cond_3
 
+# -----------------------------
+# CHANGE: Align probe 3 to probe 2 (KEEP 1 CONSTANT)
+# Fit alignment on the calibration subset using corrected values
+# -----------------------------
+subset_corr <- subset_cond_probes %>%
+  mutate(
+    P_Cond_1_Corr = coef(lm_cond1)[1] + coef(lm_cond1)[2] * P_Cond_1,
+    P_Cond_2_Corr = coef(lm_cond2)[1] + coef(lm_cond2)[2] * P_Cond_2,
+    P_Cond_3_Corr = coef(lm_cond3)[1] + coef(lm_cond3)[2] * P_Cond_3
+  )
 
-subset_cond_probes$P_Cond_1_Corr <- coef(lm_cond1)[1]+(coef(lm_cond1)[2]*subset_cond_probes$P_Cond_1)
-subset_cond_probes$P_Cond_2_Corr <- coef(lm_cond2)[1]+(coef(lm_cond2)[2]*subset_cond_probes$P_Cond_2)
-subset_cond_probes$P_Cond_3_Corr <- coef(lm_cond3)[1]+(coef(lm_cond3)[2]*subset_cond_probes$P_Cond_3)
+# Alignment model: make 3 look like 2
+Ref_corr_3to2 <- lm(P_Cond_2_Corr ~ P_Cond_3_Corr, data = subset_corr)
+coef_3to2 <- coef(Ref_corr_3to2)
 
-# Running Apex.Data.apex through the LM equations 
-Apex.Data.apex$P_Cond_1_Corr <- coef(lm_cond1)[1]+(coef(lm_cond1)[2]*Apex.Data.apex$P_Cond_1)
-Apex.Data.apex$P_Cond_2_Corr <- coef(lm_cond2)[1]+(coef(lm_cond2)[2]*Apex.Data.apex$P_Cond_2)
-Apex.Data.apex$P_Cond_3_Corr <- coef(lm_cond3)[1]+(coef(lm_cond3)[2]*Apex.Data.apex$P_Cond_3)
-# Fit regressions to match P_Cond_2_Corr and P_Cond_3_Corr to P_Cond_1_Corr
-Ref_corr_2 <- lm(P_Cond_1_Corr ~ P_Cond_2_Corr, data = subset_cond_probes)
-Ref_corr_3 <- lm(P_Cond_1_Corr ~ P_Cond_3_Corr, data = subset_cond_probes)
+# Apply alignment to full series
+Apex.Data.apex$P_Cond_3_Corr2 <- coef_3to2[1] + coef_3to2[2] * Apex.Data.apex$P_Cond_3_Corr
 
-# Extract coefficients
-coef_corr_2 <- coef(Ref_corr_2)
-coef_corr_3 <- coef(Ref_corr_3)
+# Keep probe 2 as its bath-corrected value (no extra scaling needed)
+Apex.Data.apex$P_Cond_2_Corr2 <- Apex.Data.apex$P_Cond_2_Corr
 
-# Manually correct P_Cond_2_Corr and P_Cond_3_Corr to match P_Cond_1_Corr scale
-Apex.Data.apex$P_Cond_2_Corr2 <- coef_corr_2[1] + coef_corr_2[2] * Apex.Data.apex$P_Cond_2_Corr
-Apex.Data.apex$P_Cond_3_Corr2 <- coef_corr_3[1] + coef_corr_3[2] * Apex.Data.apex$P_Cond_3_Corr
-# Create clean dataset with date and fully corrected conductivity values
+# Probe 1 remains as-is (control)
+# Apex.Data.apex$P_Cond_1_Corr already computed; no alignment
+
+# -----------------------------
+# Clean output
+# -----------------------------
 Apex.Corrected <- Apex.Data.apex %>%
   select(date, P_Cond_1_Corr, P_Cond_2_Corr2, P_Cond_3_Corr2)
-head(Apex.Corrected)
-summary(Ref_corr_2)
-summary(Apex.Data.apex$P_Cond_2_Corr)
-```
 
+# Diagnostics (optional)
+# summary(Ref_corr_3to2)
+# head(Apex.Corrected)
+
+```
 
 # pH Probe Cross Calibration 2 to 1
 ```{r}
@@ -334,13 +352,34 @@ ggplot(Apex.Data.apex, aes(x = P_pH_1, y = P_pH_3_Corr)) +
 
 # Create Data set with Date and Time and corrected probe
 ```{r}
-#Make Final Data Set
-Apex.Final <- Apex.Data.apex %>%
-  select(date, P_Cond_1_Corr, P_Cond_2_Corr2, P_Cond_3_Corr2, P_Tmp_1, P_Tmp_2, P_Tmp_3, P_pH_1, P_pH_2_Corr, P_pH_3_Corr)  
-         
-#rename columns
-colnames(Apex.Final) <- c("date", "P_Cond_1", "P_Cond_2", "P_Cond_3", "P_Tmp_1", "P_Tmp_2", "P_Tmp_3", "P_pH_1", "P_pH_2", "P_pH_3")
-# visualize data
+
+
+# --- Time window (your style) ---
+start_time <- as.POSIXct("2025-08-14 08:51:00")
+end_time   <- as.POSIXct("2025-08-15 09:15:00")
+
+# Subset the full dataset to the time window
+Apex.Sub <- Apex.Data.apex %>%
+  filter(date >= start_time & date <= end_time)
+
+# --- Make Final Data Set from the subset ---
+Apex.Final <- Apex.Sub %>%
+  select(
+    date,
+    P_Cond_1_Corr, P_Cond_2_Corr2, P_Cond_3_Corr2,
+    P_Tmp_1, P_Tmp_2, P_Tmp_3,
+    P_pH_1, P_pH_2_Corr, P_pH_3_Corr
+  )
+
+# Rename columns for plotting
+colnames(Apex.Final) <- c(
+  "date",
+  "P_Cond_1", "P_Cond_2", "P_Cond_3",
+  "P_Tmp_1", "P_Tmp_2", "P_Tmp_3",
+  "P_pH_1", "P_pH_2", "P_pH_3"
+)
+
+# Long format + probe type
 Apex.Data_long <- Apex.Final %>%
   pivot_longer(
     cols = -date,
@@ -350,13 +389,13 @@ Apex.Data_long <- Apex.Final %>%
   mutate(
     Type = case_when(
       grepl("Cond", probe) ~ "Conductivity",
-      grepl("Tmp", probe) ~ "Temperature",
-      grepl("pH", probe) ~ "pH",
+      grepl("Tmp", probe)  ~ "Temperature",
+      grepl("pH",  probe)  ~ "pH",
       TRUE ~ "Other"
     )
   )
 
-# Plot data
+# Plot
 apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color = probe, group = probe)) +
   geom_point() +
   labs(x = "Time", y = "Value", color = "Probe") +
@@ -364,11 +403,13 @@ apex.data <- ggplot(Apex.Data_long, aes(x = date, y = value, color = probe, grou
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Display plot
 print(apex.data)
-
-
+ggsave(
+  filename = paste0("Outputs/apex_probes_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf"),
+  plot = apex.data,
+  height = 6, width = 8)
 ```
+
 
 
 #salinity Calculation and column
@@ -392,8 +433,8 @@ head(Apex.Final)
 
 # Visualizing Data from the trial/Filter time points
 ```{r} 
-start_time <- as.POSIXct("2025-08-04 10:48:00")
-end_time   <- as.POSIXct("2025-08-05 10:24:00")
+start_time <- as.POSIXct("2025-08-14 08:51:00")
+end_time   <- as.POSIXct("2025-08-15 09:15:00")
 filtered_data <- Apex.Final %>%
   filter(date >= start_time & date <= end_time)
 data_long <- filtered_data %>%
@@ -408,7 +449,7 @@ slopes <- data_long %>%
     model <- lm(Salinity ~ Time_Hours, data = .)
     data.frame(Slope = coef(model)[["Time_Hours"]])
   })
-ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
+Salinitys<- ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "Salinity Over Time by Probe (Filtered)",
@@ -416,4 +457,9 @@ ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
        x = "Time (hours since 08:01 on 7/24)",
        y = "Salinity (ppt)") +
   theme_minimal()
+print(Salinitys)
+ggsave(
+  filename = paste0("Outputs/apex_Chamber_Salinity_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf"),
+  plot = Salinitys,
+  height = 6, width = 8)
 ``` 
