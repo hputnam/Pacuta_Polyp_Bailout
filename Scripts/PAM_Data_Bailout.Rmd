@@ -9,10 +9,10 @@ output: html_document
 library(tidyverse)
 
 # Step 2: Read data
-PAM <- read.csv("PAM_Data_Bailout.csv")
+PAM <- read.csv("Data/PAM_Data_Bailout.csv")
 
 # Step 3: Clean names, parse Date, make Group (A/B), and filter to A1-4/B1-4
-target_date <- as.Date("2025-08-19")  # <-- change this date (YYYY-MM-DD)
+target_date <- as.Date("2025-08-15")  # <-- change this date (YYYY-MM-DD)
 
 PAM_day <- PAM %>%
   # trim any stray spaces in column names (e.g., "Chamber ")
@@ -28,7 +28,7 @@ PAM_day <- PAM %>%
   filter(!is.na(Y))
 
 # Step 4: Boxplot comparing A vs B for Y
-ggplot(PAM_day, aes(x = Group, y = Y)) +
+Pam <-ggplot(PAM_day, aes(x = Group, y = Y)) +
   ylab("PAM Y") + xlab("Group") +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(aes(color = Chamber), width = 0.15, alpha = 0.7, size = 2) +
@@ -44,6 +44,11 @@ ggplot(PAM_day, aes(x = Group, y = Y)) +
 A <- subset(PAM_day, Group == "A", select = c(Y, Group))
 B <- subset(PAM_day, Group == "B", select = c(Y, Group))
 t.test(A$Y, B$Y)  # Welch t-test
+
+ggsave(
+  filename = paste0("Outputs/Pam_Boxplot", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf"),
+  plot = Pam,
+  height = 6, width = 8)
 
 
 ```
