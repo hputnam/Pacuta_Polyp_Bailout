@@ -19,7 +19,7 @@ library("gsw")
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250814&days=1.5") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=250819&days=1.5") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -433,33 +433,78 @@ head(Apex.Final)
 
 # Visualizing Data from the trial/Filter time points
 ```{r} 
+# Visualizing Data from the trial/Filter time points (COMBINED + exclude 1 bad window)
+```{r}
 start_time <- as.POSIXct("2025-08-14 08:51:00")
 end_time   <- as.POSIXct("2025-08-15 09:15:00")
+
+# --- Define the one bad window you want to remove ---
+bad_start <- as.POSIXct("2025-08-14 12:00:00")  # <-- change to your bad window
+bad_end   <- as.POSIXct("2025-08-14 13:00:00")
+
+# Filter to main window, then drop the bad slice
 filtered_data <- Apex.Final %>%
-  filter(date >= start_time & date <= end_time)
-data_long <- filtered_data %>%
+  filter(date >= start_time & date <= end_time) %>%
+  filter(!(date >= bad_start & date <= bad_end))
+
+# Long data for salinity, temp, and pH
+sal_long <- filtered_data %>%
   pivot_longer(cols = starts_with("Sal_"),
                names_to = "Chamber",
-               values_to = "Salinity")
-data_long <- data_long %>%
+               values_to = "value") %>%
+  mutate(Type = "Salinity")
+
+tmp_long <- filtered_data %>%
+  pivot_longer(cols = starts_with("P_Tmp_"),
+               names_to = "Chamber",
+               values_to = "value") %>%
+  mutate(Type = "Temperature")
+
+ph_long <- filtered_data %>%
+  pivot_longer(cols = starts_with("P_pH_"),
+               names_to = "Chamber",
+               values_to = "value") %>%
+  mutate(Type = "pH")
+
+# Combine and add time since start
+combined_long <- bind_rows(sal_long, tmp_long, ph_long) %>%
   mutate(Time_Hours = as.numeric(difftime(date, min(date), units = "hours")))
-slopes <- data_long %>%
+
+# Slopes for salinity
+slopes <- combined_long %>%
+  filter(Type == "Salinity") %>%
   group_by(Chamber) %>%
   do({
-    model <- lm(Salinity ~ Time_Hours, data = .)
+    model <- lm(value ~ Time_Hours, data = .)
     data.frame(Slope = coef(model)[["Time_Hours"]])
   })
-Salinitys<- ggplot(data_long, aes(x = Time_Hours, y = Salinity, color = Chamber)) +
+
+# Combined plot
+combined_plot <- ggplot(combined_long, aes(x = Time_Hours, y = value, color = Chamber)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Salinity Over Time by Probe (Filtered)",
-       subtitle = "From 2025-07-24 08:01 to 2025-07-25 06:40",
-       x = "Time (hours since 08:01 on 7/24)",
-       y = "Salinity (ppt)") +
-  theme_minimal()
-print(Salinitys)
+  geom_smooth(
+    data = combined_long %>% filter(Type == "Salinity"),
+    method = "lm", se = FALSE
+  ) +
+  labs(
+    title    = "Sensors Over Time by Probe (Filtered, bad window removed)",
+    subtitle = paste0("From ", format(start_time, "%Y-%m-%d %H:%M"),
+                      " to ", format(end_time, "%Y-%m-%d %H:%M")),
+    x = "Time (hours since start)",
+    y = "Value"
+  ) +
+  facet_wrap(~ Type, scales = "free_y") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(combined_plot)
+
 ggsave(
-  filename = paste0("Outputs/apex_Chamber_Salinity_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf"),
-  plot = Salinitys,
-  height = 6, width = 8)
+  filename = paste0("Outputs/apex_combined_Sal_Tmp_pH_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".pdf"),
+  plot = combined_plot,
+  height = 6, width = 8
+)
+
+
+
 ``` 
