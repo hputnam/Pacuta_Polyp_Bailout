@@ -1,0 +1,340 @@
+---
+title: "0_Apex_Data_Extraction"
+author: "HM Putnam"
+date: "2026-05-29"
+output: html_document
+---
+For APEX data, the script is based on Zoe Dellart's Protocol<https://github.com/zdellaert/TimeSeries/blob/main/protocols/Apex_Download.md> and script <https://github.com/zdellaert/TimeSeries/blob/main/3-Pacu/code/DMs.Rmd>.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library("XML")
+library("plyr")
+library(lubridate) # used for converting 8 digit date into datetime format for R
+library(oce)
+library(ggpmisc)
+
+#library(RColorBrewer)
+```
+
+
+Read in xml info
+```{r}
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=260422&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
+```
+
+# clean,  arrange, and save data
+```{r}
+# Select columns of interest by name from df
+#We need each probe name from the Apex listed here
+#We are using the following nomenclature Temperature = Tmp_#, Conductivity = Cond_#, pH = pH_#
+probes <- c("Tmp_1", "Tmp_2", "Tmp_3", "Tmp_4", "Tmp_5","Cond_1", "Cond_2", "Cond_3", "Cond_4", "Cond_5","pH_1", "pH_2", "pH_3", "pH_4", "pH_5")
+
+#look for the column that has the probe name (e.g., Tmp_3)
+#Find matching probe.name columns
+probe_name_cols <- grep("^probe\\.name", names(Apex.Data), value = TRUE)
+
+#map the probe names to columns
+probe_map <- sapply(probe_name_cols, function(col) {
+  na.omit(Apex.Data[[col]])[1]
+})
+
+probe_map
+
+#select desired probes
+matched_name_cols <- names(probe_map)[probe_map %in% probes]
+
+matched_value_cols <- sub("probe\\.name", "probe.value", matched_name_cols)
+
+Apex.sub <- Apex.Data[, c("date", matched_value_cols)]
+
+#rename probes from map
+new_names <- probe_map[matched_name_cols]
+
+Apex.sub <- Apex.Data[, c("date", matched_value_cols)]
+names(Apex.sub) <- c("date", new_names)
+
+str(Apex.sub)
+
+# Convert date string to POSIXct with correct time zone
+Apex.sub <- Apex.sub %>%
+  mutate(date = as.POSIXct(date, format = "%m/%d/%Y %H:%M:%S", tz = "America/Los_Angeles"))
+
+Apex.sub <- Apex.sub %>%
+  mutate(time = date + hours(3))
+
+#Apex.sub$time <- Apex.sub$date + 3 * 60 * 60
+#str(Apex.sub)
+
+# Remove NAs
+Apex.sub <- na.omit(Apex.sub)
+
+# Format file name with today's date
+today_date <- format(Sys.Date(), "%Y%m%d")
+
+# Write cleaned data to CSV
+write.csv(Apex.sub, paste0("Data/", today_date, "_", "ApexRawData.csv"), row.names = FALSE)
+
+```
+#convert to salinity 
+```{r}
+# conductivity in mS/cm
+# temperature in °C
+
+#change all chr to numeric
+Apex.sub <- Apex.sub %>%
+  dplyr::mutate(
+    dplyr::across(
+      .cols = c(starts_with("Tmp_"), starts_with("pH_"), starts_with("Cond_")),
+      .fns = as.numeric
+    )
+  )
+
+Apex.sub$pressure <- 0
+
+str(Apex.sub)
+
+swSCTp(
+  conductivity = 50,
+  temperature = 25,
+  pressure = 0,
+  conductivityUnit = "mS/cm")
+
+
+Apex.sub <- Apex.sub %>%
+  mutate(Sal_1 = swSCTp(
+  conductivity = Cond_1,
+  temperature = Tmp_1,
+  pressure = pressure,
+  conductivityUnit = "mS/cm"),
+  Sal_2 = swSCTp(
+  conductivity = Cond_2,
+  temperature = Tmp_2,
+  pressure = pressure,
+  conductivityUnit = "mS/cm"),
+  Sal_3 = swSCTp(
+  conductivity = Cond_3,
+  temperature = Tmp_3,
+  pressure = pressure,
+  conductivityUnit = "mS/cm"),
+  Sal_4 = swSCTp(
+  conductivity = Cond_4,
+  temperature = Tmp_4,
+  pressure = pressure,
+  conductivityUnit = "mS/cm"))
+  
+
+```
+
+## APEX plots
+```{r}
+
+#check for outliers
+Apex.sub <- Apex.sub %>%
+  mutate(across(-time, as.numeric))
+str(Apex.sub)
+
+outlier_rows <- Apex.sub %>%
+  filter(
+    if_any(matches("^Tmp_"),  ~ . < 15 | . > 35) |
+    if_any(matches("^pH_"),   ~ . < 7.5 | . > 9.0) |
+    if_any(matches("^Cond_"), ~ . < 20 | . > 70)|
+    if_any(matches("^Sal_"), ~ . < 30 | . > 50)
+  )
+
+outlier_rows
+
+#remove outliers
+Apex.sub.clean <- Apex.sub %>%
+  filter(
+    !(
+      if_any(matches("^Tmp_"),  ~ . < 15 | . > 35) |
+      if_any(matches("^pH_"),   ~ . < 6.5 | . > 9.0) |
+      if_any(matches("^Cond_"), ~ . < 20 | . > 70)|
+    if_any(matches("^Sal_"), ~ . < 30 | . > 50)
+    )
+  )
+
+#truncate data from start time to stop time per trial
+start_time <- as.POSIXct("2026-04-22 13:30:00", tz = "America/New_York")
+end_time   <- as.POSIXct("2026-04-23 12:40:00", tz = "America/New_York")
+
+Apex.sub.trim <- Apex.sub.clean %>%
+  filter(time >= start_time &
+         time <= end_time)
+
+probe_treatment_map <- tibble(
+  probe = c("1", "2", "3", "4"),
+  treatment = c("Control", "Control", "High", "High")  # edit these
+)
+
+Apex.sub.trim <- Apex.sub.trim %>% 
+  subset(select = c(-date, -pressure))
+
+Apex.long <- Apex.sub.trim %>%
+  pivot_longer(
+    cols = - time,
+    names_to = "probe_name",
+    values_to = "value"
+  ) %>%
+  mutate(
+    value = as.numeric(value),
+    parameter = case_when(
+      str_detect(probe_name, "^Tmp")  ~ "Temperature",
+      str_detect(probe_name, "^pH")   ~ "pH",
+      str_detect(probe_name, "^Cond") ~ "Conductivity",
+      str_detect(probe_name, "^Sal") ~ "Salinity"
+    ),
+    probe = str_extract(probe_name, "\\d+$")
+  ) %>%
+  left_join(probe_treatment_map, by = "probe")
+
+str(Apex.long)
+
+apex_data <- ggplot(Apex.long, aes(x = time, y = value, color = treatment, shape = probe)) +
+  geom_point(alpha = 1, size = 1.5) +
+  facet_wrap(~ parameter, scales = "free_y", ncol = 1) +
+  scale_x_datetime(
+  date_breaks = "2 hour",
+  date_labels = "%b %d\n%H:%M"
+)+
+    scale_color_manual(
+    values = c(
+      "Control" = "blue",
+      "High" = "red"
+    ))+
+  theme_bw() +
+  labs(
+    x = "Date",
+    y = "Value",
+    color = "Treatment",
+    shape = "Probe"
+  )
+apex_data
+
+# Save plot 
+ggsave("Output/Trial_1_apex_data.png", apex_data, width = 10, height = 8, units = c("in"))
+
+```
+#calculate the rate of change of salinity
+```{r}
+
+ggplot(Apex.sub.trim, aes(x = time, y = Sal_3)) +
+  geom_point(alpha = 1, size = 1.5) +
+   geom_smooth(method = "lm", se = FALSE, color = "red") +
+  stat_poly_eq(
+    formula = y ~ x,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")),
+    parse = TRUE
+  )+
+  scale_x_datetime(
+  date_breaks = "2 hour",
+  date_labels = "%b %d\n%H:%M"
+)+
+  theme_bw() +
+  labs(
+    x = "Date",
+    y = "Salinity psu"
+  )
+  
+rate.mods <- summary(lm(Sal_3~time, Apex.sub.trim ))
+
+#convert the slope of psu per second into psu/hr
+0.000152 * 60 * 60
+
+
+
+```
+
+
+#OXY DATA
+```{r}
+#reading oxy files
+Oxy1 <- read.csv("Data/PreSens_OxyData/20260422_B2_CH1.csv", fileEncoding = "latin1")
+Oxy2 <- read.csv("Data/PreSens_OxyData/20260422_B4_CH2.csv", fileEncoding = "latin1")
+Oxy3 <- read.csv("Data/PreSens_OxyData/20260422_A2_CH3.csv", fileEncoding = "latin1")
+Oxy4 <- read.csv("Data/PreSens_OxyData/20260422_A4_CH5.csv", fileEncoding = "latin1")
+
+
+#adding columns in the dataframes
+Oxy1$Chamber <- "Oxy_1"
+Oxy2$Chamber <- "Oxy_2"
+Oxy3$Chamber <- "Oxy_3"
+Oxy4$Chamber <- "Oxy_4"
+
+# Combine into one dataframe
+oxy_everything <- bind_rows(Oxy1, Oxy2, Oxy3, Oxy4)
+
+#select columns needed for the analysis 
+oxy_final <- oxy_everything %>%
+  select(Date, Chamber, Oxygen, Temperature) #%>%
+ #filter(!(Chamber == "Oxy_2" & Oxygen > 100))
+
+# Convert datetime column
+oxy_final$Date <- as.POSIXct(
+  oxy_final$Date,
+  format = "%d/%m/%y %H:%M:%S"
+)
+
+str(oxy_final)
+
+oxy_treatment_map <- tibble(
+  Chamber = c("Oxy_1", "Oxy_2", "Oxy_3", "Oxy_4"),
+  treatment = c("Control", "Control", "High", "High")
+)
+
+oxy.long <- oxy_final %>%
+  pivot_longer(
+    cols = c(Oxygen, Temperature),
+    names_to = "parameter",
+    values_to = "value"
+  ) %>%
+  left_join(oxy_treatment_map, by = "Chamber")
+
+oxy_plot <- ggplot(
+  oxy.long,
+  aes(
+    x = Date,
+    y = value,
+    color = treatment,
+    shape = Chamber
+  )
+) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  facet_wrap(
+    ~parameter,
+    scales = "free_y",
+    ncol = 1
+  ) +
+  scale_color_manual(
+    values = c(
+      "Control" = "blue",
+      "High" = "red"
+    )
+  ) +
+  scale_x_datetime(
+    date_breaks = "2 hour",
+    date_labels = "%b %d\n%H:%M"
+  ) +
+  theme_bw() +
+  labs(
+    x = "Date",
+    y = "Value",
+    color = "Treatment",
+    shape = "Chamber"
+  ) +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+oxy_plot
+
+# Save plot 
+ggsave("Output/Trial1_Oxygen_Temp.png", oxy_plot, width = 10, height = 8, units = c("in"))
+
+
+```

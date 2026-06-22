@@ -1,0 +1,295 @@
+---
+title: "PolyBailout_Script"
+author: "Pooja Pednekar"
+date: "2026-05-22"
+output: html_document
+---
+As of 05/22/2026 this script plots pH, Temperature and Conductivity data from the APEX loggers. This script also plots PreSens Oxy data which is used for the first time to include in Polyp bailout experiments. Additionally, there is a PAM plot included in this script which gives us the background on the photosynthetic ability of the corals. 
+
+Probe #s 1 and 2 are probes placed in the control chambers of the experiment while probes 3 and 4 are placed in the experimented chambers. We have two treatment groups: Control (Normal Salinity) and Experimental (High Salinity). Even though we have 4 replicates per treatment group, we only have been so far measuring data in two replicates per treatment group for all the variables. 
+
+This script plots Polyp Bailout measurements for the Putnam lab and is based on the Putnam Lab Script available here:  <https://github.com/Putnam-Lab/CBLS_Wetlab/tree/main/Scripts/daily-measurements.Rmd>
+
+For APEX data, the script is based on Zoe Dellart's Protocol<https://github.com/zdellaert/TimeSeries/blob/main/protocols/Apex_Download.md> and script <https://github.com/zdellaert/TimeSeries/blob/main/3-Pacu/code/DMs.Rmd>.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate) # used for converting 8 digit date into datetime format for R
+library(RColorBrewer)
+library(rmarkdown)
+library(tinytex)
+library(xml2)
+library(plyr)
+library(dplyr)
+library(ggpmisc)
+library(gsw)
+library(janitor)
+library(ggpubr)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+
+## If seacarb needs to be downloaded:
+#packageurl <- "https://cran.r-project.org/src/contrib/Archive/seacarb/seacarb_3.2.tar.gz"
+#install.packages(packageurl, repos = NULL, type = "source")
+#install.packages("seacarb")
+library(seacarb) 
+
+
+custom_colors <- c("Tmp_1" = "#9ECAE1", "Cond_1" = "#9ECAE1", "pH_1" = "#9ECAE1", "Tmp_2" = "#3182BD", "Cond_2" = "#3182BD", "pH_2" = "#3182BD", "Tmp_3" = "#FC9272", "Cond_3" = "#FC9272", "pH_3" = "#FC9272", "Tmp_4" = "#E15759", "Cond_4" = "#E15759", "pH_4" = "#E15759")
+```
+
+##APEX DATA conversion 
+```{r}
+#exported apex data online
+#1. Export data
+#2.Open xml file in excel
+#3. Save as csv
+#4. Importing csv into R
+
+
+#reading file
+apex <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/ApexLogger/Spring_2026/20260422Trail1/ApexRawData.csv", sep=",", skip=c(1), header=TRUE, na.strings = "NA")[6:9]
+
+#Selecting column names of our desire
+colnames(apex) <-  c("DateTime","ProbeName","ProbeType","Value")
+
+head(apex)
+
+#converting date and adapting to the timezone
+apex$DateTimeHST <- parse_date_time(apex$DateTime, "%m/%d/%y %H:%M:%S", tz = "Pacific/Honolulu")
+apex$DateTimeEST <- with_tz(apex$DateTimeHST, tzone = "America/New_York")
+head(apex)
+
+# filtering dates based on experiment timeline  (use GMT for the time, so +6)
+apex_Exp <- apex %>% filter(DateTimeEST >= "2026-04-22 11:00:00" & DateTimeEST <= "2026-04-23 11:00:00")
+
+#unique(apex_Exp$ProbeType) #checking the probetype names
+
+1.00#filtering data to be plotted  filter(!(ProbeType == "Cond" & Value %in% c(0, 0.1)))
+
+apex_toplot <- apex_Exp %>%
+  filter(ProbeType == "Temp"|
+         ProbeType == "pH"|
+         ProbeType == "Cond") %>%
+  filter(!(ProbeType == "Cond" & Value <= 0.2)) %>%
+  mutate(Value = ifelse(ProbeType == "Cond",round(Value * 0.64, 1), Value))
+```
+## APEX plots
+```{r}
+# Threshold lines
+hlines_data <- data.frame(yintercept = c(22.0, 30.0,35.0, 45.0,8.1, 8.3),
+  ProbeType = c("Temp", "Temp", "Cond", "Cond","pH", "pH"))
+
+facet_labels <- unique(apex_Exp$ProbeType)
+names(facet_labels) = facet_labels
+facet_labels <- replace(facet_labels, which(facet_labels == "pH"), "pH")
+facet_labels <- replace(facet_labels, which(facet_labels == "Cond"), "Salinity (psu)")
+facet_labels <- replace(facet_labels, which(facet_labels == "Temp"), "Temperature (ºC)")
+
+apex_final <- apex_toplot %>%
+  ggplot(aes(x = DateTimeEST,
+             y = Value,
+             colour = ProbeName)) +
+  geom_point(size = 2) +
+  geom_hline(data = hlines_data,aes(yintercept = yintercept),linetype = "dashed",
+    inherit.aes = FALSE
+  ) +
+  scale_color_manual(values = custom_colors) +
+  xlab("DateTimeEST") +
+  facet_grid(factor(ProbeType, c("pH", "Cond", "Temp")) ~ .,scales = "free_y",labeller = as_labeller(facet_labels)) +
+  theme_bw() +
+  theme(text = element_text(size = 14))
+
+# Save plot 
+ggsave("../Output/Daily_Measurements.png", apex_final, width = 20, height = 15, units = c("in"))
+
+apex_final
+```
+
+
+
+#OXY DATA
+```{r}
+#reading oxy files
+Oxy1 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PreSens_OxyData/20260422/20260422_B2_CH1.csv",
+  fileEncoding = "latin1")
+Oxy2 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PreSens_OxyData/20260422/20260422_B4_CH2.csv",
+  fileEncoding = "latin1")
+Oxy3 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PreSens_OxyData/20260422/20260422_A2_CH3.csv",
+  fileEncoding = "latin1")
+Oxy4 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PreSens_OxyData/20260422/20260422_A4_CH5.csv",
+  fileEncoding = "latin1")
+
+
+#adding columns in the dataframes
+Oxy1$Chamber <- "Oxy_1"
+Oxy2$Chamber <- "Oxy_2"
+Oxy3$Chamber <- "Oxy_3"
+Oxy4$Chamber <- "Oxy_4"
+
+# Combine into one dataframe
+oxy_everything <- bind_rows(Oxy1, Oxy2, Oxy3, Oxy4)
+
+#select columns needed for the analysis 
+oxy_final <- oxy_everything %>%
+  select(Date, Oxygen, Chamber)%>%
+ filter(!(Chamber == "Oxy_2" & Oxygen > 100))
+
+# Convert datetime column
+oxy_final$Date <- as.POSIXct(
+  oxy_final$Date,
+  format = "%d/%m/%y %H:%M:%S"
+)
+
+# Plot
+oxy_plot <- ggplot(oxy_final,
+       aes(x = Date,
+           y = Oxygen,
+           color = Chamber)) +
+  geom_line(alpha = 0.7) +
+  theme_classic() +
+  labs(x = "Time",
+       y = "Oxygen Concentration (µmol/L)",
+       color = "Chamber")
+
+
+# Save plot 
+ggsave("../Output/20260422/Oxygen_Trial1.png", oxy_plot, width = 10, height = 8, units = c("in"))
+
+
+
+```
+
+
+
+#PAM DATA
+```{r}
+
+PAM <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PAM/PAM.csv") %>% clean_names()
+PAM <- PAM %>% mutate(Date = as.factor(date)) %>% 
+                mutate(Timepoint = factor(timepoint)) %>%
+                mutate(Treatment = factor(treatment,levels = c("A1","A2","A3","A4","B1", "B2", "B3", "B4" , ordered=TRUE)))
+
+
+ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = treatment)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()
+
+ggsave("../output/PAM.png", plot = last_plot(), width = 9, height = 4, bg = "white")
+
+```
+
+
+
+apex_Temp <- apex_Exp %>% 
+  filter(ProbeType == "Tmp")
+
+apex_Temp %>% 
+  ggplot(aes(x = DateTimeEST, y = Value, color = ProbeName)) +
+  geom_line(linewidth = 0.3, alpha = 0.4) +
+  geom_smooth(se = FALSE, linewidth = 1) +
+  facet_wrap(~ProbeName, ncol = 2) +
+  labs(
+    x = "Date Time",
+    y = "Temperature (°C)",
+    title = "Temperature Over Time"
+  ) +
+  theme_bw() +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "grey90"),
+    legend.position = "none"
+  )
+```
+
+
+
+#Make a list of dataframes, each containing a horizontal line that will correspond to the upper and lower threshold of each parameter (temperature, salinity, pH total)
+hlines_data <- list(
+  data.frame(yintercept = 22.0, metric = "Temp"), # lower threshold for temperature in C°
+  data.frame(yintercept = 30.0, metric = "Temp"), # upper threshold for temperature in C°
+  data.frame(yintercept = 33.0, metric = "Cond"), # lower threshold for salinity in psu
+  data.frame(yintercept = 70.0, metric = "Cond"), # upper threshold for salinity in psu
+  data.frame(yintercept = 7.5, metric = "pH"), # lower threshold for total pH
+  data.frame(yintercept = 8.4, metric = "pH") # upper threshold for total pH
+   )
+
+#creating facet labels for the individual facets
+facet_labels <- unique(apex_Exp$ProbeType)
+names(facet_labels) = facet_labels
+facet_labels <- replace(facet_labels, which(facet_labels == "pH"), "pH")
+facet_labels <- replace(facet_labels, which(facet_labels == "Cond"), "Salinity (psu)")
+facet_labels <- replace(facet_labels, which(facet_labels == "Temp"), "Temperature (ºC)")
+
+apex_final<-apex_toplot %>%
+  ggplot(aes(x=DateTimeEST, y=Value, colour=ProbeName))+
+  geom_point(size=2)+
+  xlab("DateTimeEST")+
+  facet_grid(factor(ProbeType,c("pH","Cond","Temp")) ~ ., scales = "free_y", labeller = as_labeller(facet_labels))+
+  geom_hline(data = hlines_data[[1]], aes(yintercept = yintercept), linetype = "dashed") +    
+  geom_hline(data = hlines_data[[2]], aes(yintercept = yintercept), linetype = "dashed") +
+  geom_hline(data = hlines_data[[3]], aes(yintercept = yintercept), linetype = "dashed") +
+  geom_hline(data = hlines_data[[4]], aes(yintercept = yintercept), linetype = "dashed") +
+  geom_hline(data = hlines_data[[5]], aes(yintercept = yintercept), linetype = "dashed") +
+  geom_hline(data = hlines_data[[6]], aes(yintercept = yintercept), linetype = "dashed") +
+  theme_bw() + 
+  theme(text = element_text(size = 14)); apex_final
+
+
+# Save plot 
+ggsave("../Output/Daily_Measurements.pdf", apex_final, width = 20, height = 15, units = c("in"))
+
+```
+
+
+#exported apex data online
+#1. Export data
+#2.Open xml file in excel
+#3. Save as csv
+#4. Importing csv into R
+
+
+#reading file
+apex <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/ApexLogger/Spring_2026/20260422Trail1/ApexRawData.csv", sep=",", skip=c(1), header=TRUE, na.strings = "NA")[6:9]
+
+#Selecting column names of our desire
+colnames(apex) <-  c("DateTime","ProbeName","ProbeType","Value")
+
+head(apex)
+
+#converting date and adapting to the timezone
+apex$DateTimeHST <- parse_date_time(apex$DateTime, "%m/%d/%y %H:%M:%S", tz = "Pacific/Honolulu")
+apex$DateTimeEST <- with_tz(apex$DateTimeHST, tzone = "America/New_York")
+head(apex)
+
+# filtering dates based on experiment timeline  (use GMT for the time, so +6)
+apex_Exp <- apex %>% filter(DateTimeEST >= "2026-04-22 11:00:00" & DateTimeEST <= "2026-04-23 11:00:00")
+
+1.00#filtering data to be plotted
+
+apex_toplot <- apex_Exp %>%
+  filter(ProbeType == "pH",
+         ProbeType == "Cond",
+         ProbeType == "Temp")
+
+#apex_pH <- apex_Exp %>% filter (ProbeType== "pH")
+#apex_Cond <- apex_Exp %>% filter (ProbeType == "Cond")
+#apex_temps <- apex_Exp %>% filter(ProbeType == "Temp")
+
+##Plot data 
+
+#logger_plot %>% ggplot()
+
+
+
+## plotting extracted data
+#apex_temps %>% ggplot(aes(x=DateTimeEST, y=Value, color = ProbeName)) +
+  #geom_line(aes(color = ProbeName), size = 0.5) +
+  #facet_grid(~ProbeType)+
+  #ylab("Temperature (°C)") +theme_minimal()
+
+
+#ggsave("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/output/20260422_apex_temps.pdf",
+      #width = 10, height = 20, units = "in", , bg = "white")
+``

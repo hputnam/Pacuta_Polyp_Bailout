@@ -91,7 +91,7 @@ apex_final <- apex_toplot %>%
   ggplot(aes(x = DateTimeEST,
              y = Value,
              colour = ProbeName)) +
-  geom_point(size = 2) +
+  geom_smooth(size = 0.8, alpha = 0.7) +
   geom_hline(data = hlines_data,aes(yintercept = yintercept),linetype = "dashed",
     inherit.aes = FALSE
   ) +
@@ -158,7 +158,6 @@ oxy_plot <- ggplot(oxy_final,
 ggsave("../Output/20260422/Oxygen_Trial1.png", oxy_plot, width = 10, height = 8, units = c("in"))
 
 
-
 ```
 
 
@@ -167,16 +166,49 @@ ggsave("../Output/20260422/Oxygen_Trial1.png", oxy_plot, width = 10, height = 8,
 ```{r}
 
 PAM <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/data/PAM/PAM.csv") %>% clean_names()
-PAM <- PAM %>% mutate(Date = as.factor(date)) %>% 
-                mutate(Timepoint = factor(timepoint)) %>%
-                mutate(Treatment = factor(treatment,levels = c("A1","A2","A3","A4","B1", "B2", "B3", "B4" , ordered=TRUE)))
+PAM <- PAM %>% mutate(date = as.factor(date)) %>% 
+                mutate(timepoint = factor(timepoint)) %>%
+                mutate(treatment = factor(treatment,levels = c("A1","A2","A3","A4","B1", "B2", "B3", "B4" , ordered=TRUE))) %>%
+                dplyr::rename("replicate" = treatment)%>%
+                mutate(treatment = str_replace(replicate,"\\d",""))
 
 
 ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+  
     geom_boxplot(aes(fill = treatment)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
-  theme_minimal()
+  theme_minimal()+
+  stat_compare_means(aes(group = treatment), method = "anova", label = "p.format", size=3)
 
 ggsave("../output/PAM.png", plot = last_plot(), width = 9, height = 4, bg = "white")
+
+facet_PAM <- ggplot(PAM,aes(x = treatment, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = treatment)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    facet_grid(~timepoint )+
+  theme_minimal()+
+  stat_compare_means()
+
+facet_PAM
+  #stat_compare_means(aes(group = treatment), method = "anova", label = "p.format", size=3)
+
+ggplot(PAM,aes(x = treatment, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = date)) + labs(x = "Treatment", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()+
+  scale_fill_manual(values =c("20260421" = "orange", "20260423" = "olivedrab")) +
+  stat_compare_means(aes(group = date), method = "anova", label = "p.format", size=3)
+
+facet_PAM_treatment <- ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+     geom_boxplot(aes(color = date))+
+    geom_line(aes(group = replicate)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    geom_point(aes(color = date), alpha = 0.5 ) +
+    facet_grid(~treatment )+
+  scale_color_manual(values =c("20260421" = "orange", "20260423" = "olivedrab")) +
+  theme_minimal()+
+  stat_compare_means(paired= TRUE)
+
+facet_PAM_treatment
+
+
+
 
 ```
 
