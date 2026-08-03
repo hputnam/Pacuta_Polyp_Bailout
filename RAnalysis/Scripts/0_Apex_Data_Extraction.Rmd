@@ -13,6 +13,8 @@ library("plyr")
 library(lubridate) # used for converting 8 digit date into datetime format for R
 library(oce)
 library(ggpmisc)
+library(janitor)
+library(ggpubr)
 
 #library(RColorBrewer)
 ```
@@ -20,7 +22,7 @@ library(ggpmisc)
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=260422&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=260722&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -74,7 +76,7 @@ Apex.sub <- na.omit(Apex.sub)
 today_date <- format(Sys.Date(), "%Y%m%d")
 
 # Write cleaned data to CSV
-write.csv(Apex.sub, paste0("Data/", today_date, "_", "ApexRawData.csv"), row.names = FALSE)
+write.csv(Apex.sub, paste0("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/", today_date, "_", "ApexRawData.csv"), row.names = FALSE)
 
 ```
 #convert to salinity 
@@ -157,8 +159,8 @@ Apex.sub.clean <- Apex.sub %>%
   )
 
 #truncate data from start time to stop time per trial
-start_time <- as.POSIXct("2026-04-22 13:30:00", tz = "America/New_York")
-end_time   <- as.POSIXct("2026-04-23 12:40:00", tz = "America/New_York")
+start_time <- as.POSIXct("2026-07-23 13:47:00", tz = "America/New_York")
+end_time   <- as.POSIXct("2026-07-24 09:45:00", tz = "America/New_York")
 
 Apex.sub.trim <- Apex.sub.clean %>%
   filter(time >= start_time &
@@ -166,7 +168,7 @@ Apex.sub.trim <- Apex.sub.clean %>%
 
 probe_treatment_map <- tibble(
   probe = c("1", "2", "3", "4"),
-  treatment = c("Control", "Control", "High", "High")  # edit these
+  treatment = c("High", "Control", "High", "Control")  # edit these
 )
 
 Apex.sub.trim <- Apex.sub.trim %>% 
@@ -214,13 +216,13 @@ apex_data <- ggplot(Apex.long, aes(x = time, y = value, color = treatment, shape
 apex_data
 
 # Save plot 
-ggsave("Output/Trial_1_apex_data.png", apex_data, width = 10, height = 8, units = c("in"))
+ggsave("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Output/Trial_7_apex_data.png", apex_data, width = 10, height = 8, units = c("in"))
 
 ```
 #calculate the rate of change of salinity
 ```{r}
-
-ggplot(Apex.sub.trim, aes(x = time, y = Sal_3)) +
+#change y= Sal_n; where n=probe in one of the treatment
+ggplot(Apex.sub.trim, aes(x = time, y = Sal_1)) + #edit y=Sal_#; # is the probe number of high salinity treatment
   geom_point(alpha = 1, size = 1.5) +
    geom_smooth(method = "lm", se = FALSE, color = "red") +
   stat_poly_eq(
@@ -238,10 +240,13 @@ ggplot(Apex.sub.trim, aes(x = time, y = Sal_3)) +
     y = "Salinity psu"
   )
   
-rate.mods <- summary(lm(Sal_3~time, Apex.sub.trim ))
+rate.mods <- summary(lm(Sal_1~time, Apex.sub.trim ))
+
 
 #convert the slope of psu per second into psu/hr
-0.000152 * 60 * 60
+0.000169 * 60 * 60
+
+
 
 
 
@@ -251,62 +256,77 @@ rate.mods <- summary(lm(Sal_3~time, Apex.sub.trim ))
 #OXY DATA
 ```{r}
 #reading oxy files
-Oxy1 <- read.csv("Data/PreSens_OxyData/20260422_B2_CH1.csv", fileEncoding = "latin1")
-Oxy2 <- read.csv("Data/PreSens_OxyData/20260422_B4_CH2.csv", fileEncoding = "latin1")
-Oxy3 <- read.csv("Data/PreSens_OxyData/20260422_A2_CH3.csv", fileEncoding = "latin1")
-Oxy4 <- read.csv("Data/PreSens_OxyData/20260422_A4_CH5.csv", fileEncoding = "latin1")
+Oxy1 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-001_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy2 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-002_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy3 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-003_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy4 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-004_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy6 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-006_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy7 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-007_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy8 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-008_20260723.csv",skip=1, fileEncoding = "latin1")
+Oxy9 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-009_20260723.csv", skip=1, fileEncoding = "latin1")
 
 
-#adding columns in the dataframes
+#adding columns in the dataframes;
 Oxy1$Chamber <- "Oxy_1"
-Oxy2$Chamber <- "Oxy_2"
+Oxy2$Chamber <- "Oxy_7"
 Oxy3$Chamber <- "Oxy_3"
-Oxy4$Chamber <- "Oxy_4"
+Oxy4$Chamber <- "Oxy_5"
+Oxy6$Chamber <- "Oxy_6"
+Oxy7$Chamber <- "Oxy_8"
+Oxy8$Chamber <- "Oxy_2"
+Oxy9$Chamber <- "Oxy_4"
 
 # Combine into one dataframe
-oxy_everything <- bind_rows(Oxy1, Oxy2, Oxy3, Oxy4)
+oxy_everything <- bind_rows(Oxy1, Oxy2, Oxy3, Oxy4, Oxy6, Oxy7, Oxy8, Oxy9)
+
+
+# Convert datetime column
+oxy_everything$DateTime <- as.POSIXct(
+  paste(oxy_everything$Date, oxy_everything$Time),
+  format = "%m/%d/%Y %H:%M:%S"
+)
+
 
 #select columns needed for the analysis 
 oxy_final <- oxy_everything %>%
-  select(Date, Chamber, Oxygen, Temperature) #%>%
+  select(DateTime, Chamber, Value, Phase) #%>%
  #filter(!(Chamber == "Oxy_2" & Oxygen > 100))
-
-# Convert datetime column
-oxy_final$Date <- as.POSIXct(
-  oxy_final$Date,
-  format = "%d/%m/%y %H:%M:%S"
-)
 
 str(oxy_final)
 
 oxy_treatment_map <- tibble(
-  Chamber = c("Oxy_1", "Oxy_2", "Oxy_3", "Oxy_4"),
-  treatment = c("Control", "Control", "High", "High")
+  Chamber = c("Oxy_1", "Oxy_2", "Oxy_3", "Oxy_4", "Oxy_5", "Oxy_6", "Oxy_7", "Oxy_8"),
+  treatment = c("High", "High", "Control", "Control", "Control", "High", "Control", "High")
 )
 
 oxy.long <- oxy_final %>%
   pivot_longer(
-    cols = c(Oxygen, Temperature),
+    cols = c(Value, Phase),
     names_to = "parameter",
     values_to = "value"
   ) %>%
   left_join(oxy_treatment_map, by = "Chamber")
+  
 
 oxy_plot <- ggplot(
   oxy.long,
   aes(
-    x = Date,
+    x = DateTime,
     y = value,
     color = treatment,
     shape = Chamber
   )
 ) +
   geom_point(alpha = 0.5, size = 1.5) +
-  facet_wrap(
-    ~parameter,
-    scales = "free_y",
-    ncol = 1
-  ) +
+ facet_wrap(
+  ~parameter,
+  scales = "free_y",
+  ncol = 1,
+  labeller = as_labeller(c(
+    Value = "Oxygen Concentration (µmol/L)",
+    Phase = "Temperature (°C)"
+  ))
+) +
   scale_color_manual(
     values = c(
       "Control" = "blue",
@@ -319,7 +339,7 @@ oxy_plot <- ggplot(
   ) +
   theme_bw() +
   labs(
-    x = "Date",
+    x = "DateTime",
     y = "Value",
     color = "Treatment",
     shape = "Chamber"
@@ -334,7 +354,102 @@ oxy_plot <- ggplot(
 oxy_plot
 
 # Save plot 
-ggsave("Output/Trial1_Oxygen_Temp.png", oxy_plot, width = 10, height = 8, units = c("in"))
+ggsave("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Output/Trial7_Oxygen_Temp.png", oxy_plot, width = 10, height = 8, units = c("in"))
 
 
 ```
+
+#PAM DATA
+
+```{r}
+PAM <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PAM.csv") %>% clean_names()
+PAM <- PAM %>% mutate(date = as.factor(date)) %>% 
+                mutate(timepoint = factor(timepoint)) %>%
+                mutate(group = factor(group,levels = c("control","treatment")),
+                       replicate= factor (replicate),
+                       timepoint = factor(timepoint))
+
+
+ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+  
+    geom_boxplot(aes(fill = group)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()+
+  stat_compare_means(aes(group = group), method = "anova", label = "p.format", size=3)
+
+ggsave("../output/PAM.png", plot = last_plot(), width = 9, height = 4, bg = "white")
+
+facet_PAM <- ggplot(PAM,aes(x = group, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = group)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    facet_grid(~timepoint )+
+  theme_minimal()+
+  stat_compare_means()
+
+facet_PAM
+  #stat_compare_means(aes(group = treatment), method = "anova", label = "p.format", size=3)
+
+ggplot(PAM,aes(x = group, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = date)) + labs(x = "Group", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()+
+  scale_fill_manual(values =c("20260421" = "orange", "20260423" = "olivedrab", "20260616" = "#CD1076", "20260624" = "#CD96CD")) +
+  stat_compare_means(aes(group = date), method = "anova", label = "p.format", size=3)
+
+facet_PAM_treatment <- ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+     geom_boxplot(aes(color = date))+
+    geom_line(aes(group = replicate)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    geom_point(aes(color = date), alpha = 0.5 ) +
+    facet_grid(~group )+
+  scale_color_manual(values =c("20260421" = "orange", "20260423" = "olivedrab", "20260616" = "#CD1076", "20260624" = "#CD96CD")) +
+  theme_minimal()+
+  stat_compare_means(paired= TRUE)
+
+facet_PAM_treatment
+
+```
+
+
+```{r}
+PAM <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PAM.csv") %>% clean_names()
+PAM <- PAM %>% mutate(date = as.factor(date)) %>% 
+                mutate(timepoint = factor(timepoint)) %>%
+                mutate(group = factor(group,levels = c("A1","A2","A3","A4","B1", "B2", "B3", "B4" , ordered=TRUE))) %>%
+                dplyr::rename("replicate" = treatment)%>%
+                mutate(treatment = str_replace(replicate,"\\d",""))
+
+
+ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+  
+    geom_boxplot(aes(fill = treatment)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()+
+  stat_compare_means(aes(group = treatment), method = "anova", label = "p.format", size=3)
+
+ggsave("../output/PAM.png", plot = last_plot(), width = 9, height = 4, bg = "white")
+
+facet_PAM <- ggplot(PAM,aes(x = treatment, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = treatment)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    facet_grid(~timepoint )+
+  theme_minimal()+
+  stat_compare_means()
+
+facet_PAM
+  #stat_compare_means(aes(group = treatment), method = "anova", label = "p.format", size=3)
+
+ggplot(PAM,aes(x = treatment, y = fv_fm_y_1000)) + 
+    geom_boxplot(aes(fill = date)) + labs(x = "Treatment", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+  theme_minimal()+
+  scale_fill_manual(values =c("20260421" = "orange", "20260423" = "olivedrab")) +
+  stat_compare_means(aes(group = date), method = "anova", label = "p.format", size=3)
+
+facet_PAM_treatment <- ggplot(PAM,aes(x = date, y = fv_fm_y_1000)) + 
+     geom_boxplot(aes(color = date))+
+    geom_line(aes(group = replicate)) + labs(x = "Date", y = "Fv/Fm", title = "Fv/Fm by Date and Treatment") +
+    geom_point(aes(color = date), alpha = 0.5 ) +
+    facet_grid(~treatment )+
+  scale_color_manual(values =c("20260421" = "orange", "20260423" = "olivedrab")) +
+  theme_minimal()+
+  stat_compare_means(paired= TRUE)
+
+facet_PAM_treatment
+
+```
+
+
