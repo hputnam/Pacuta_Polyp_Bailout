@@ -22,7 +22,7 @@ library(ggpubr)
 
 Read in xml info
 ```{r}
-apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=260722&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
+apex.xmlfile <- xmlParse("http://10.10.204.74/cgi-bin/datalog.xml?sdate=260729&days=2") #read in the date (e.g. 180620) plus # days (e.g. days=4) of Apex data
 Apex.Data <- ldply(xmlToList(apex.xmlfile), data.frame) #convert xml to dataframe
 ```
 
@@ -159,8 +159,8 @@ Apex.sub.clean <- Apex.sub %>%
   )
 
 #truncate data from start time to stop time per trial
-start_time <- as.POSIXct("2026-07-23 13:47:00", tz = "America/New_York")
-end_time   <- as.POSIXct("2026-07-24 09:45:00", tz = "America/New_York")
+start_time <- as.POSIXct("2026-07-29 18:00:00", tz = "America/New_York")
+end_time   <- as.POSIXct("2026-07-30 11:30:00", tz = "America/New_York")
 
 Apex.sub.trim <- Apex.sub.clean %>%
   filter(time >= start_time &
@@ -168,7 +168,7 @@ Apex.sub.trim <- Apex.sub.clean %>%
 
 probe_treatment_map <- tibble(
   probe = c("1", "2", "3", "4"),
-  treatment = c("High", "Control", "High", "Control")  # edit these
+  treatment = c("Control", "High", "Control", "High")  # edit these
 )
 
 Apex.sub.trim <- Apex.sub.trim %>% 
@@ -221,8 +221,9 @@ ggsave("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Output/Trial_7_apex_data.pn
 ```
 #calculate the rate of change of salinity
 ```{r}
+
 #change y= Sal_n; where n=probe in one of the treatment
-ggplot(Apex.sub.trim, aes(x = time, y = Sal_1)) + #edit y=Sal_#; # is the probe number of high salinity treatment
+ggplot(Apex.sub.trim, aes(x = time, y = Sal_2)) + #edit y=Sal_#; # is the probe number of high salinity treatment
   geom_point(alpha = 1, size = 1.5) +
    geom_smooth(method = "lm", se = FALSE, color = "red") +
   stat_poly_eq(
@@ -240,11 +241,11 @@ ggplot(Apex.sub.trim, aes(x = time, y = Sal_1)) + #edit y=Sal_#; # is the probe 
     y = "Salinity psu"
   )
   
-rate.mods <- summary(lm(Sal_1~time, Apex.sub.trim ))
+rate.mods <- summary(lm(Sal_2~time, Apex.sub.trim ))
 
 
 #convert the slope of psu per second into psu/hr
-0.000169 * 60 * 60
+0.000116 * 60 * 60
 
 
 
@@ -256,25 +257,25 @@ rate.mods <- summary(lm(Sal_1~time, Apex.sub.trim ))
 #OXY DATA
 ```{r}
 #reading oxy files
-Oxy1 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-001_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy2 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-002_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy3 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-003_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy4 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-004_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy6 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-006_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy7 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-007_20260723.csv", skip=1, fileEncoding = "latin1")
-Oxy8 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-008_20260723.csv",skip=1, fileEncoding = "latin1")
-Oxy9 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-009_20260723.csv", skip=1, fileEncoding = "latin1")
+Oxy1 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-001_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy2 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-002_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy3 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-003_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy4 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-004_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy6 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-006_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy7 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-007_20260729.csv", skip=1, fileEncoding = "latin1")
+Oxy8 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-008_20260729.csv",skip=1, fileEncoding = "latin1")
+Oxy9 <- read.csv("C:/PUTNAM LAB/Pacuta_Polyp_Bailout/RAnalysis/Data/PreSens_OxyData/PBO-009_20260729.csv", skip=1, fileEncoding = "latin1")
 
 
 #adding columns in the dataframes;
-Oxy1$Chamber <- "Oxy_1"
-Oxy2$Chamber <- "Oxy_7"
-Oxy3$Chamber <- "Oxy_3"
-Oxy4$Chamber <- "Oxy_5"
-Oxy6$Chamber <- "Oxy_6"
-Oxy7$Chamber <- "Oxy_8"
-Oxy8$Chamber <- "Oxy_2"
-Oxy9$Chamber <- "Oxy_4"
+Oxy1$Chamber <- "Oxy_4"
+Oxy2$Chamber <- "Oxy_6"
+Oxy3$Chamber <- "Oxy_8"
+Oxy4$Chamber <- "Oxy_2"
+Oxy6$Chamber <- "Oxy_7"
+Oxy7$Chamber <- "Oxy_3"
+Oxy8$Chamber <- "Oxy_5"
+Oxy9$Chamber <- "Oxy_1"
 
 # Combine into one dataframe
 oxy_everything <- bind_rows(Oxy1, Oxy2, Oxy3, Oxy4, Oxy6, Oxy7, Oxy8, Oxy9)
@@ -296,7 +297,7 @@ str(oxy_final)
 
 oxy_treatment_map <- tibble(
   Chamber = c("Oxy_1", "Oxy_2", "Oxy_3", "Oxy_4", "Oxy_5", "Oxy_6", "Oxy_7", "Oxy_8"),
-  treatment = c("High", "High", "Control", "Control", "Control", "High", "Control", "High")
+  treatment = c("Control", "Control", "High", "High", "High", "Control", "Control", "High")
 )
 
 oxy.long <- oxy_final %>%
@@ -452,4 +453,9 @@ facet_PAM_treatment
 
 ```
 
+
+#Percent Bailout Graph
+```{r}
+
+```
 
